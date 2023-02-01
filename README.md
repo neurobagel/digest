@@ -1,4 +1,4 @@
-# mint-dash
+# Neurobagel participant derivatives status dashboard
 
 A web dashboard providing interactive visualization of statuses of processing tasks performed on a neuroimaging dataset.
 
