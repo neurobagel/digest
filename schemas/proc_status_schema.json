@@ -1,7 +1,8 @@
 {
     "GLOBAL_COLUMNS": {
         "participant_id":{"Description":"", "dtype":"", "range":""},
-        "pipeline": {"Description":"", "dtype":"", "range":""},
+        "session": {"Description":"", "dtype":"", "range":""},
+        "pipeline": {"Description":"", "dtype":"", "range":""},        
         "version": {"Description":"", "dtype":"", "range":""}
     },
     "PIPELINE_COLUMN_PREFIXES": {
