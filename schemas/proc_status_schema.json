@@ -6,7 +6,7 @@
         "version": {"Description":"", "dtype":"", "range":""}
     },
     "PIPELINE_COLUMN_PREFIXES": {
-        "Phase_":{"Description":"", "dtype":"", "range":""},
-        "Stage_":{"Description":"", "dtype":"", "range":""}
+        "Global_": {"Description":"", "dtype":"", "range":""},
+        "Phase_":{"Description":"", "dtype":"", "range":""}
     }
 }
