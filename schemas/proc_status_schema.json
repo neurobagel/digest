@@ -9,6 +9,11 @@
             "Description": "Participant session ID.", 
             "dtype": "str",
             "IsRequired": true
+        },
+        "pipeline_name": {
+            "Description": "Name of pipeline that was run for the participant. Example: 'freesurfer'",
+            "dtype": "str",
+            "IsRequired": true
         },     
         "pipeline_version": {
             "description": "Version of pipeline that was run. Example: '7.3.0'",
@@ -20,6 +25,11 @@
             "dtype": "str",
             "IsRequired": true
         },
+        "pipeline_endtime": {
+            "Description": "Date/time that pipeline run ended, if applicable for a participant. In format of 'YYYY-MM-DD HH:MM:SS' or 'None'",
+            "dtype": "str",
+            "IsRequired": false
+        },
         "pipeline_complete": {
             "Description": "Status of pipeline run. 'SUCCESS': All stages of pipeline finished successfully (all expected pipeline output files are present). 'FAIL': At least one stage of the pipeline failed. 'INCOMPLETE': Pipeline has not yet been run for the participant or at least one stage is unfinished/still running. 'UNAVAILABLE': Relevant data modality for pipeline not available for participant.",
             "dtype": "str",
@@ -28,12 +38,6 @@
         }
     },
     "PIPELINE_COLUMN_PREFIXES": {
-        "Global_": {
-            "Description": "Status of top-level output subdirectories, if applicable. 'TRUE': All expected output directories are present. 'FALSE': At least one output directory is missing.",
-            "dtype": "bool",
-            "Range": [true, false],
-            "IsRequired": false
-        },
         "Phase_": {
             "Description": "Completion status of specific phase/subworkflow of the pipeline. Each phase may correspond to a specific output subdirectory, and is associated with multiple related output files. If Phase_ and Stage_ columns are present simultaneously, each phase is expected to correspond to >= 1 stage. 'TRUE': All output files of phase are present. 'FALSE': At least one output file of phase is missing.",
             "dtype": "bool",
