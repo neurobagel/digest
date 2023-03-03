@@ -1,5 +1,7 @@
 import base64
 import io
+import json
+from pathlib import Path
 from typing import Union
 
 import pandas as pd
@@ -7,20 +9,29 @@ from dash.dependencies import Input, Output, State
 
 from dash import Dash, dash_table, dcc, html
 
-# TODO: Once all columns with "IsRequired": true from proc_status_schema.json are handled,
-# parse REQUIRED_COLUMNS directly from json file
-REQUIRED_COLUMNS = [
-    "participant_id",
-    "session",
-    "pipeline_name",
-    "pipeline_version",
-    "pipeline_complete",
-]
+SCHEMAS_PATH = Path(__file__).absolute().parent.parent / "schemas"
+
+
+# TODO: When possible values per column have been finalized (waiting on mr_proc),
+# validate that each column only has acceptable values
+def get_required_bagel_columns() -> list:
+    with open(SCHEMAS_PATH / "proc_status_schema.json", "r") as file:
+        schema = json.load(file)
+
+    required_columns = []
+    for col_category, cols in schema.items():
+        for col, props in cols.items():
+            if props["IsRequired"]:
+                required_columns.append(col)
+
+    return required_columns
 
 
 def extract_pipelines(bagel: pd.DataFrame) -> dict:
     """Get data for each unique pipeline in the aggregate input as an individual labelled dataframe."""
-    missing_req_columns = set(REQUIRED_COLUMNS).difference(bagel.columns)
+    missing_req_columns = set(get_required_bagel_columns()).difference(
+        bagel.columns
+    )
 
     if len(missing_req_columns) > 0:
         raise LookupError(
@@ -32,9 +43,12 @@ def extract_pipelines(bagel: pd.DataFrame) -> dict:
     pipelines = bagel.groupby(["pipeline_name", "pipeline_version"])
     for (name, version), pipeline in pipelines:
         label = f"{name}-{version}"
-        pipelines_dict[label] = pipeline.drop(
-            ["pipeline_name", "pipeline_version"], axis=1
-        ).reset_index(drop=True)
+        # per pipeline, rows are sorted in case participants/sessions are out of order
+        pipelines_dict[label] = (
+            pipeline.sort_values(["participant_id", "session"])
+            .drop(["pipeline_name", "pipeline_version"], axis=1)
+            .reset_index(drop=True)
+        )
 
     return pipelines_dict
 
@@ -49,7 +63,6 @@ def check_num_subjects(pipelines_dict: dict) -> Union[pd.DataFrame, None]:
         for df in pipelines_dict.values()
     ]
 
-    # TODO: Should probably sort pipelines somehow (by "participant_id"?) in case the order is different per pipeline
     if not all(
         pipeline.equals(pipeline_subject_sessions[0])
         for pipeline in pipeline_subject_sessions
@@ -92,6 +105,7 @@ app.layout = html.Div(
         dcc.Upload(
             id="upload-data",
             children=html.Button("Drag and Drop or Select .csv File"),
+            style={"margin": "10px"},
             multiple=False,
         ),
         html.Div(id="output-data-upload"),
@@ -111,8 +125,8 @@ def parse_contents(contents, filename):
             return html.Div(
                 ["Error: Input file is not a .csv file. Please try again."]
             )
-    except Exception as e:
-        print(e)
+    except Exception as exc:
+        print(exc)
         return html.Div(["There was an error processing this file."])
 
     try:
