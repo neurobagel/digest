@@ -103,9 +103,7 @@ app = Dash(
 
 app.layout = html.Div(
     children=[
-        html.H1(
-            children="NeurDS-dash: Neuroimaging Derivatives Status dashboard"
-        ),
+        html.H1(children="Neuroimaging Derivatives Status Dashboard"),
         dcc.Upload(
             id="upload-data",
             children=html.Button("Drag and Drop or Select .csv File"),
