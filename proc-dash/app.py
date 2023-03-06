@@ -2,7 +2,6 @@ import base64
 import io
 import json
 from pathlib import Path
-from typing import Union
 
 import pandas as pd
 from dash.dependencies import Input, Output, State
@@ -12,8 +11,6 @@ from dash import Dash, dash_table, dcc, html
 SCHEMAS_PATH = Path(__file__).absolute().parent.parent / "schemas"
 
 
-# TODO: When possible values per column have been finalized (waiting on mr_proc),
-# validate that each column only has acceptable values
 def get_required_bagel_columns() -> list:
     with open(SCHEMAS_PATH / "proc_status_schema.json", "r") as file:
         schema = json.load(file)
@@ -27,8 +24,10 @@ def get_required_bagel_columns() -> list:
     return required_columns
 
 
-def extract_pipelines(bagel: pd.DataFrame) -> dict:
-    """Get data for each unique pipeline in the aggregate input as an individual labelled dataframe."""
+# TODO: When possible values per column have been finalized (waiting on mr_proc),
+# validate that each column only has acceptable values
+def check_required_columns(bagel: pd.DataFrame):
+    """Returns error if required columns in bagel schema are missing."""
     missing_req_columns = set(get_required_bagel_columns()).difference(
         bagel.columns
     )
@@ -38,6 +37,9 @@ def extract_pipelines(bagel: pd.DataFrame) -> dict:
             f"Error: The selected .csv is missing the following required metadata columns: {missing_req_columns}"
         )
 
+
+def extract_pipelines(bagel: pd.DataFrame) -> dict:
+    """Get data for each unique pipeline in the aggregate input as an individual labelled dataframe."""
     pipelines_dict = {}
 
     pipelines = bagel.groupby(["pipeline_name", "pipeline_version"])
@@ -53,11 +55,10 @@ def extract_pipelines(bagel: pd.DataFrame) -> dict:
     return pipelines_dict
 
 
-def check_num_subjects(pipelines_dict: dict) -> Union[pd.DataFrame, None]:
-    """
-    Checks if the subjects and sessions are the same per pipeline in the input.
-    Return dataframe with only "participant_id" and "session" columns if true, return None otherwise.
-    """
+def check_num_subjects(bagel: pd.DataFrame):
+    """Returns error if subjects and sessions are different across pipelines in the input."""
+    pipelines_dict = extract_pipelines(bagel)
+
     pipeline_subject_sessions = [
         df.loc[:, ["participant_id", "session"]]
         for df in pipelines_dict.values()
@@ -67,9 +68,9 @@ def check_num_subjects(pipelines_dict: dict) -> Union[pd.DataFrame, None]:
         pipeline.equals(pipeline_subject_sessions[0])
         for pipeline in pipeline_subject_sessions
     ):
-        return None
-    else:
-        return pipeline_subject_sessions[0]
+        raise LookupError(
+            "Error: The pipelines in bagel.csv do not have the same number of subjects and sessions."
+        )
 
 
 def get_overview(bagel: pd.DataFrame) -> pd.DataFrame:
@@ -77,17 +78,20 @@ def get_overview(bagel: pd.DataFrame) -> pd.DataFrame:
     Constructs a dataframe containing global statuses of pipelines in bagel.csv
     (based on "pipeline_complete" column) for each participant and session.
     """
+    check_required_columns(bagel)
+    check_num_subjects(bagel)
 
-    pipelines_dict = extract_pipelines(bagel)
-    pipeline_complete_df = check_num_subjects(pipelines_dict)
-
-    if pipeline_complete_df is None:
-        raise LookupError(
-            "Error: The pipelines in bagel.csv do not have the same number of subjects and sessions."
-        )
-
-    for label, df in pipelines_dict.items():
-        pipeline_complete_df[label] = df.loc[:, "pipeline_complete"]
+    pipeline_complete_df = bagel.pivot(
+        index=["participant_id", "session"],
+        columns=["pipeline_name", "pipeline_version"],
+        values="pipeline_complete",
+    )
+    pipeline_complete_df.columns = [
+        # for neatness, rename pipeline-specific columns from "(name, version)" to "{name}-{version}"
+        "-".join(tup)
+        for tup in pipeline_complete_df.columns.to_flat_index()
+    ]
+    pipeline_complete_df.reset_index(inplace=True)
 
     return pipeline_complete_df
 
