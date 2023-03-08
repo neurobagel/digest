@@ -2,18 +2,10 @@ import os
 
 import pytest
 from dash.testing.application_runners import import_app
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-
-
-@pytest.fixture(scope="session")
-def chrome_driver_init():
-    webdriver.Chrome(service=Service(ChromeDriverManager().install()))
 
 
 @pytest.fixture(scope="function")
-def test_server(dash_duo, chrome_driver_init):
+def test_server(dash_duo):
     app = import_app("proc_dash.app")
     dash_duo.start_server(app)
 
