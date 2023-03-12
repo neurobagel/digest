@@ -17,7 +17,7 @@ SCHEMAS_PATH = Path(__file__).absolute().parent.parent / "schemas"
 
 
 def get_required_bagel_columns() -> list:
-    with open(SCHEMAS_PATH / "proc_status_schema.json", "r") as file:
+    with open(SCHEMAS_PATH / "bagel_schema.json", "r") as file:
         schema = json.load(file)
 
     required_columns = []
