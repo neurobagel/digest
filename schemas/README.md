@@ -3,7 +3,11 @@
 ## `bagel_schema.json`
 This file describes the recognized columns in tabular inputs to the dashboard (`bagel.csv`).
 
-In the schema, a named column can have the following attributes:
+In the schema, columns are organized into two categories:  
+`GLOBAL_COLUMNS`: Includes columns describing metadata that should have the same meaning regardless of pipeline, and does not depend on pipeline outputs.  
+`PIPELINE_STATUS_COLUMNS`: Includes columns conveying information about pipeline completion that depends on pipeline-specific outputs and may vary depending on the pipeline tracker used.
+
+A specific named column can have the following attributes:
 - `Description`
   - Describes the column contents, along with the meaning of different acceptable values for categorical columns.
 - `dtype`

@@ -19,7 +19,7 @@
             "Range": [true, false],
             "IsPrefixedColumn": false
         },
-        "Datatype_": {
+        "DATATYPE_": {
             "Description": "Whether or not participant session has specified BIDS datatype. Column suffix should correspond to a specific BIDS subdirectory, e.g., 'anat'.",
             "dtype": "bool",
             "IsRequired": false,
@@ -63,14 +63,14 @@
             "Range": ["SUCCESS", "FAIL", "INCOMPLETE", "UNAVAILABLE"],
             "IsPrefixedColumn": false
         },
-        "Phase_": {
+        "PHASE_": {
             "Description": "Completion status of tracker-specified phase/subworkflow of the pipeline. Each phase may correspond to a specific output subdirectory, and may be associated with multiple related output files. If Phase_ and Stage_ columns are both present, each phase is expected to correspond to >= 1 stage. 'SUCCESS': All output files corresponding to phase are present. 'FAIL': At least one output file of phase is missing. This status may be used to indicate that the phase crashed. 'INCOMPLETE': Output files for phase are not present. This status may be used to indicate that the phase was not configured for the run (e.g., if it corresponds to a specific derivative type). 'UNAVAILABLE': Relevant data modality for pipeline not available for participant.",
             "dtype": "str",
             "IsRequired": false,
             "Range": ["SUCCESS", "FAIL", "INCOMPLETE", "UNAVAILABLE"],
             "IsPrefixedColumn": true
         },
-        "Stage_": {
+        "STAGE_": {
             "Description": "Completion status of tracker-specified stage of the pipeline. Each stage may correspond to a single output file or a few linked outputs expected to always coexist. If Phase_ and Stage_ columns are both present, each phase is expected to correspond to >= 1 stage. 'SUCCESS': All output files corresponding to stage are present. 'FAIL': At least one output file of stage is missing. This status may be used to indicate that the stage crashed. 'INCOMPLETE': Output files for phase are not present. This status may be used to indicate that this stage was not configured for the run. 'UNAVAILABLE': Relevant data modality for pipeline not available for participant.",
             "dtype": "str",
             "IsRequired": false,
