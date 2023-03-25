@@ -7,16 +7,20 @@ import base64
 import io
 import json
 from pathlib import Path
+from typing import Optional, Tuple
 
+import dash_bootstrap_components as dbc
 import pandas as pd
 from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
 
-from dash import Dash, dash_table, dcc, html
+from dash import Dash, ctx, dash_table, dcc, html
 
 SCHEMAS_PATH = Path(__file__).absolute().parent.parent / "schemas"
 
 
 def get_required_bagel_columns() -> list:
+    """Returns names of required columns from the bagel schema."""
     with open(SCHEMAS_PATH / "bagel_schema.json", "r") as file:
         schema = json.load(file)
 
@@ -39,7 +43,7 @@ def check_required_columns(bagel: pd.DataFrame):
 
     if len(missing_req_columns) > 0:
         raise LookupError(
-            f"Error: The selected .csv is missing the following required metadata columns: {missing_req_columns}"
+            f"The selected .csv is missing the following required metadata columns: {missing_req_columns}."
         )
 
 
@@ -74,7 +78,7 @@ def check_num_subjects(bagel: pd.DataFrame):
         for pipeline in pipeline_subject_sessions
     ):
         raise LookupError(
-            "Error: The pipelines in bagel.csv do not have the same number of subjects and sessions."
+            "The pipelines in bagel.csv do not have the same number of subjects and sessions."
         )
 
 
@@ -106,6 +110,7 @@ app = Dash(
     external_stylesheets=["https://codepen.io/chriddyp/pen/bWLwgP.css"],
 )
 
+
 app.layout = html.Div(
     children=[
         html.H1(children="Neuroimaging Derivatives Status Dashboard"),
@@ -116,11 +121,61 @@ app.layout = html.Div(
             multiple=False,
         ),
         html.Div(id="output-data-upload"),
+        dbc.Card(
+            [
+                # TODO: Put label and dropdown in same row
+                html.Div(
+                    [
+                        dbc.Label("Filter by multiple sessions:"),
+                        dcc.Dropdown(
+                            id="session-dropdown",
+                            options=[],
+                            multi=True,
+                            placeholder="Select one or more available sessions to filter by",
+                        ),
+                    ]
+                ),
+                html.Div(
+                    [
+                        dbc.Label("Selection operator:"),
+                        dcc.Dropdown(
+                            id="select-operator",
+                            options=[
+                                {
+                                    "label": "AND",
+                                    "value": "AND",
+                                    "title": "Show only participants with all selected sessions.",
+                                },
+                                {
+                                    "label": "OR",
+                                    "value": "OR",
+                                    "title": "Show participants with any of the selected sessions.",
+                                },
+                            ],
+                            value="AND",
+                            clearable=False,
+                        ),
+                    ]
+                ),
+            ]
+        ),
     ]
 )
 
 
-def parse_contents(contents, filename):
+def parse_csv_contents(
+    contents, filename
+) -> Tuple[Optional[pd.DataFrame], Optional[list], Optional[str]]:
+    """
+    Returns
+    -------
+    pd.DataFrame or None
+        Dataframe containing global statuses of pipelines for each participant-session.
+    list or None
+        List of the unique session ids in the dataset.
+    str or None
+        Error raised during parsing of the input, if applicable.
+    """
     content_type, content_string = contents.split(",")
 
     decoded = base64.b64decode(content_string)
@@ -129,37 +184,107 @@ def parse_contents(contents, filename):
         if ".csv" in filename:
             bagel = pd.read_csv(io.StringIO(decoded.decode("utf-8")))
         else:
-            return html.Div(
-                ["Error: Input file is not a .csv file. Please try again."]
-            )
+            return None, None, "Input file is not a .csv file."
     except Exception as exc:
         print(exc)
-        return html.Div(["There was an error processing this file."])
+        return None, None, "Something went wrong while processing this file."
 
     try:
-        return html.Div(
-            [
-                html.H5("Input file: " + filename),
-                dash_table.DataTable(
-                    data=get_overview(bagel=bagel).to_dict("records"),
-                    page_size=10,
-                ),
-            ]
-        )
+        overview_df = get_overview(bagel=bagel)
     except LookupError as err:
-        return html.Div(str(err))
+        return None, None, str(err)
+
+    sessions = overview_df["session"].sort_values().unique().tolist()
+    # session_opts = [{"label": ses, "value": ses} for ses in sessions]
+
+    return overview_df, sessions, None
+
+
+def filter_by_sessions(
+    data: pd.DataFrame, session_values: list, operator_value: str
+) -> pd.DataFrame:
+    """
+    Returns dataframe filtered for data corresponding to the specified sessions, for participants
+    who have either any or all of the selected sessions, depending on the specified operator.
+    """
+    if operator_value == "AND":
+        matching_subs = []
+        for sub_id, sub in data.groupby("participant_id"):
+            if all(
+                value in sub["session"].unique() for value in session_values
+            ):
+                matching_subs.append(sub_id)
+        data = data[
+            data["participant_id"].isin(matching_subs)
+            & data["session"].isin(session_values)
+        ]
+    else:
+        if operator_value == "OR":
+            data = data[data["session"].isin(session_values)]
+
+    return data
 
 
 @app.callback(
-    Output("output-data-upload", "children"),
-    Input("upload-data", "contents"),
-    State("upload-data", "filename"),
-)  # TODO: use absolute file path instead?
-def update_output(contents, filename):
-    if contents is not None:
-        children = [parse_contents(contents=contents, filename=filename)]
+    [
+        Output("output-data-upload", "children"),
+        Output("session-dropdown", "options"),
+    ],
+    [
+        Input("upload-data", "contents"),
+        State("upload-data", "filename"),
+        Input("session-dropdown", "value"),
+        Input("select-operator", "value"),
+    ],
+)
+def update_outputs(contents, filename, session_values, operator_value):
+    if contents is None:
+        return html.Div("Upload a CSV file to begin."), []
 
-        return children
+    data, sessions, upload_error = parse_csv_contents(
+        contents=contents, filename=filename
+    )
+
+    if upload_error is not None:
+        return html.Div(f"Error: {upload_error} Please try again."), []
+
+    if session_values:
+        data = filter_by_sessions(
+            data=data,
+            session_values=session_values,
+            operator_value=operator_value,
+        )
+
+    table = html.Div(
+        [
+            html.H5("Input file: " + filename),
+            dash_table.DataTable(
+                id="interactive-datatable",
+                columns=[{"name": i, "id": i} for i in data.columns],
+                data=data.to_dict("records"),
+                sort_action="native",
+                sort_mode="multi",
+                filter_action="native",
+                page_size=10,
+            ),
+            # TODO: Fix behaviour where session only allows filtering by strings
+        ]
+    )
+    session_opts = [{"label": ses, "value": ses} for ses in sessions]
+
+    return table, session_opts
+
+
+@app.callback(
+    Output("session-dropdown", "value"),
+    Input("upload-data", "contents"),
+    # prevent_initial_call=True ??
+)
+def reset_dropdowns(contents):
+    """If file contents change (i.e., new CSV uploaded), reset session dropdown selection values."""
+    if ctx.triggered_id == "upload-data":
+        return ""
+    raise PreventUpdate
 
 
 if __name__ == "__main__":
