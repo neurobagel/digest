@@ -41,6 +41,7 @@ def check_required_columns(bagel: pd.DataFrame):
         bagel.columns
     )
 
+    # TODO: Check if there are any missing values in the `participant_id` column
     if len(missing_req_columns) > 0:
         raise LookupError(
             f"The selected .csv is missing the following required metadata columns: {missing_req_columns}."
@@ -113,14 +114,38 @@ app = Dash(
 
 app.layout = html.Div(
     children=[
-        html.H1(children="Neuroimaging Derivatives Status Dashboard"),
+        html.H2(children="Neuroimaging Derivatives Status Dashboard"),
         dcc.Upload(
             id="upload-data",
             children=html.Button("Drag and Drop or Select .csv File"),
-            style={"margin": "10px"},
+            style={"margin-top": "10px", "margin-bottom": "10px"},
             multiple=False,
         ),
-        html.Div(id="output-data-upload"),
+        html.Div(
+            id="output-data-upload",
+            children=[
+                html.H6(id="input-filename"),
+                html.Div(
+                    children=[
+                        html.Div(id="total-participants"),
+                        html.Div(
+                            id="matching-participants",
+                            style={"margin-left": "15px"},
+                        ),
+                    ],
+                    style={"display": "inline-flex"},
+                ),
+                dash_table.DataTable(
+                    id="interactive-datatable",
+                    data=None,
+                    sort_action="native",
+                    sort_mode="multi",
+                    filter_action="native",
+                    page_size=10,
+                ),  # TODO: Treat all columns as strings to standardize filtering syntax?
+            ],
+            style={"margin-top": "10px", "margin-bottom": "10px"},
+        ),
         dbc.Card(
             [
                 # TODO: Put label and dropdown in same row
@@ -132,6 +157,7 @@ app.layout = html.Div(
                             options=[],
                             multi=True,
                             placeholder="Select one or more available sessions to filter by",
+                            # TODO: Can set `disabled=True` here to prevent any user interaction before file is uploaded
                         ),
                     ]
                 ),
@@ -154,6 +180,7 @@ app.layout = html.Div(
                             ],
                             value="AND",
                             clearable=False,
+                            # TODO: Can set `disabled=True` here to prevent any user interaction before file is uploaded
                         ),
                     ]
                 ),
@@ -163,49 +190,65 @@ app.layout = html.Div(
 )
 
 
+def count_unique_subjects(data: pd.DataFrame) -> int:
+    if "participant_id" in data.columns:
+        return data["participant_id"].nunique()
+    else:
+        return 0
+
+
 def parse_csv_contents(
     contents, filename
-) -> Tuple[Optional[pd.DataFrame], Optional[list], Optional[str]]:
+) -> Tuple[
+    Optional[pd.DataFrame], Optional[int], Optional[list], Optional[str]
+]:
     """
     Returns
     -------
     pd.DataFrame or None
         Dataframe containing global statuses of pipelines for each participant-session.
+    int or None
+        Total number of unique participants in the dataframe.
     list or None
         List of the unique session ids in the dataset.
     str or None
         Error raised during parsing of the input, if applicable.
     """
     content_type, content_string = contents.split(",")
-
     decoded = base64.b64decode(content_string)
 
+    error_msg = None
     try:
         if ".csv" in filename:
             bagel = pd.read_csv(io.StringIO(decoded.decode("utf-8")))
+            overview_df = get_overview(bagel=bagel)
+            total_subjects = count_unique_subjects(overview_df)
+            sessions = overview_df["session"].sort_values().unique().tolist()
         else:
-            return None, None, "Input file is not a .csv file."
+            error_msg = "Input file is not a .csv file."
+    except LookupError as err:
+        error_msg = str(err)
     except Exception as exc:
         print(exc)
-        return None, None, "Something went wrong while processing this file."
+        error_msg = "Something went wrong while processing this file."
 
-    try:
-        overview_df = get_overview(bagel=bagel)
-    except LookupError as err:
-        return None, None, str(err)
+    if error_msg is not None:
+        return None, None, None, error_msg
 
-    sessions = overview_df["session"].sort_values().unique().tolist()
-    # session_opts = [{"label": ses, "value": ses} for ses in sessions]
-
-    return overview_df, sessions, None
+    return overview_df, total_subjects, sessions, None
 
 
 def filter_by_sessions(
     data: pd.DataFrame, session_values: list, operator_value: str
 ) -> pd.DataFrame:
     """
-    Returns dataframe filtered for data corresponding to the specified sessions, for participants
-    who have either any or all of the selected sessions, depending on the specified operator.
+    Returns dataframe filtered for data corresponding to the specified sessions,
+    for participants who have either any or all of the selected sessions, depending
+    on the selected operator.
+
+    Note: This functionality is meant to complement the datatable's built-in
+    column-wise filtering UI, since the filtering syntax does not readily support
+    intuitive queries for multiple specific values in a column.
     """
     if operator_value == "AND":
         matching_subs = []
@@ -227,7 +270,9 @@ def filter_by_sessions(
 
 @app.callback(
     [
-        Output("output-data-upload", "children"),
+        Output("interactive-datatable", "columns"),
+        Output("interactive-datatable", "data"),
+        Output("total-participants", "children"),
         Output("session-dropdown", "options"),
     ],
     [
@@ -239,14 +284,14 @@ def filter_by_sessions(
 )
 def update_outputs(contents, filename, session_values, operator_value):
     if contents is None:
-        return html.Div("Upload a CSV file to begin."), []
+        return None, None, "Upload a CSV file to begin.", []
 
-    data, sessions, upload_error = parse_csv_contents(
+    data, total_subjects, sessions, upload_error = parse_csv_contents(
         contents=contents, filename=filename
     )
 
     if upload_error is not None:
-        return html.Div(f"Error: {upload_error} Please try again."), []
+        return None, None, f"Error: {upload_error} Please try again.", []
 
     if session_values:
         data = filter_by_sessions(
@@ -255,35 +300,55 @@ def update_outputs(contents, filename, session_values, operator_value):
             operator_value=operator_value,
         )
 
-    table = html.Div(
-        [
-            html.H5("Input file: " + filename),
-            dash_table.DataTable(
-                id="interactive-datatable",
-                columns=[{"name": i, "id": i} for i in data.columns],
-                data=data.to_dict("records"),
-                sort_action="native",
-                sort_mode="multi",
-                filter_action="native",
-                page_size=10,
-            ),
-            # TODO: Fix behaviour where session only allows filtering by strings
-        ]
-    )
+    tbl_columns = [{"name": i, "id": i} for i in data.columns]
+    tbl_data = data.to_dict("records")
+    tbl_total_subjects = f"Total number of participants: {total_subjects}"
     session_opts = [{"label": ses, "value": ses} for ses in sessions]
 
-    return table, session_opts
+    return tbl_columns, tbl_data, tbl_total_subjects, session_opts
 
 
 @app.callback(
-    Output("session-dropdown", "value"),
-    Input("upload-data", "contents"),
-    # prevent_initial_call=True ??
+    Output("matching-participants", "children"),
+    [
+        Input("interactive-datatable", "columns"),
+        Input("interactive-datatable", "derived_virtual_data"),
+    ],
 )
-def reset_dropdowns(contents):
-    """If file contents change (i.e., new CSV uploaded), reset session dropdown selection values."""
+def update_matching_participants(columns, virtual_data):
+    """
+    If the visible data in the datatable changes, update count of
+    unique participants shown ("Participants matching query").
+
+    When no filter (built-in or dropdown-based) has been applied,
+    this count will be the same as the total number of participants
+    in the dataset.
+    """
+    # calculate participant count for active table as long as datatable columns exist
+    if columns is not None and columns != []:
+        active_df = pd.DataFrame.from_dict(virtual_data)
+        return (
+            f"Participants matching query: {count_unique_subjects(active_df)}"
+        )
+
+    return ""
+
+
+@app.callback(
+    [
+        Output("input-filename", "children"),
+        Output("interactive-datatable", "filter_query"),
+        Output("session-dropdown", "value"),
+    ],
+    Input("upload-data", "contents"),
+    State("upload-data", "filename"),
+    prevent_initial_call=True,
+)
+def reset_table(contents, filename):
+    """If file contents change (i.e., new CSV uploaded), reset file name and filter selection values."""
     if ctx.triggered_id == "upload-data":
-        return ""
+        return f"Input file: {filename}", "", ""
+
     raise PreventUpdate
 
 
