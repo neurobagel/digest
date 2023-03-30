@@ -191,10 +191,11 @@ app.layout = html.Div(
 
 
 def count_unique_subjects(data: pd.DataFrame) -> int:
-    if "participant_id" in data.columns:
-        return data["participant_id"].nunique()
-    else:
-        return 0
+    return (
+        data["participant_id"].nunique()
+        if "participant_id" in data.columns
+        else 0
+    )
 
 
 def parse_csv_contents(
