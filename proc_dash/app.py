@@ -46,7 +46,9 @@ app.layout = html.Div(
                     sort_action="native",
                     sort_mode="multi",
                     filter_action="native",
-                    page_size=10,
+                    page_size=50,
+                    fixed_rows={"headers": True},
+                    style_table={"height": "300px", "overflowY": "auto"},
                 ),  # TODO: Treat all columns as strings to standardize filtering syntax?
             ],
             style={"margin-top": "10px", "margin-bottom": "10px"},
