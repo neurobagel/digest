@@ -73,6 +73,14 @@ def check_num_subjects(bagel: pd.DataFrame):
         )
 
 
+def count_unique_subjects(data: pd.DataFrame) -> int:
+    return (
+        data["participant_id"].nunique()
+        if "participant_id" in data.columns
+        else 0
+    )
+
+
 def get_pipelines_overview(bagel: pd.DataFrame) -> pd.DataFrame:
     """
     Constructs a dataframe containing global statuses of pipelines in bagel.csv
@@ -94,14 +102,6 @@ def get_pipelines_overview(bagel: pd.DataFrame) -> pd.DataFrame:
     pipeline_complete_df.reset_index(inplace=True)
 
     return pipeline_complete_df
-
-
-def count_unique_subjects(data: pd.DataFrame) -> int:
-    return (
-        data["participant_id"].nunique()
-        if "participant_id" in data.columns
-        else 0
-    )
 
 
 def parse_csv_contents(
