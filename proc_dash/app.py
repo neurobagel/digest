@@ -93,6 +93,7 @@ app.layout = html.Div(
                 ),
             ]
         ),
+        dcc.Graph(id="pipeline-completion", style={"display": "none"}),
     ]
 )
 
@@ -177,6 +178,24 @@ def reset_table(contents, filename):
         return f"Input file: {filename}", "", ""
 
     raise PreventUpdate
+
+
+@app.callback(
+    [
+        Output("pipeline-completion", "figure"),
+        Output("pipeline-completion", "style"),
+    ],
+    Input(
+        "interactive-datatable", "data"
+    ),  # Input not triggered by datatable frontend filtering
+    prevent_initial_call=True,
+)
+def update_overview_status_fig(data):
+    if data is not None:
+        df = pd.DataFrame.from_dict(data)
+        return util.create_overview_status_fig(df), {"display": "block"}
+
+    return {"data": [], "layout": {}, "frames": []}, {"display": "none"}
 
 
 if __name__ == "__main__":

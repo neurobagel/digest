@@ -5,8 +5,17 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 import pandas as pd
+import plotly.express as px
 
 SCHEMAS_PATH = Path(__file__).absolute().parents[1] / "schemas"
+
+STATUS_CMAP = px.colors.qualitative.Bold
+STATUS_COLORS = {
+    "SUCCESS": STATUS_CMAP[5],
+    "FAIL": STATUS_CMAP[9],
+    "INCOMPLETE": STATUS_CMAP[3],
+    "UNAVAILABLE": STATUS_CMAP[10],
+}
 
 
 def get_required_bagel_columns() -> list:
@@ -99,6 +108,9 @@ def get_pipelines_overview(bagel: pd.DataFrame) -> pd.DataFrame:
         "-".join(tup)
         for tup in pipeline_complete_df.columns.to_flat_index()
     ]
+    pipeline_complete_df = pipeline_complete_df.reindex(
+        sorted(pipeline_complete_df.columns), axis=1
+    )
     pipeline_complete_df.reset_index(inplace=True)
 
     return pipeline_complete_df
@@ -173,3 +185,43 @@ def filter_by_sessions(
             data = data[data["session"].isin(session_values)]
 
     return data
+
+
+def create_overview_status_fig(data: pd.DataFrame):
+    long_data = pd.melt(
+        data,
+        id_vars="participant_id",
+        value_vars=list(data.columns[2:]),
+        var_name="pipeline_name",
+        value_name="pipeline_complete",
+    )
+    status_counts = (
+        long_data.groupby(["pipeline_name", "pipeline_complete"])
+        .size()
+        .reset_index(name="records")
+    )
+
+    fig = px.bar(
+        status_counts,
+        x="pipeline_name",
+        y="records",
+        color="pipeline_complete",
+        text_auto=True,
+        category_orders={
+            "pipeline_complete": [
+                "SUCCESS",
+                "FAIL",
+                "INCOMPLETE",
+                "UNAVAILABLE",
+            ]
+        },
+        color_discrete_map=STATUS_COLORS,
+        labels={
+            "pipeline_name": "Pipeline",
+            "records": "Unique records",
+            "pipeline_complete": "Processing status",
+        },
+    )
+    fig.update_traces(textposition="outside", cliponaxis=False)
+
+    return fig
