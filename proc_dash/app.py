@@ -8,12 +8,18 @@ import pandas as pd
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
+import proc_dash.plotting as plot
 import proc_dash.utility as util
 from dash import Dash, ctx, dash_table, dcc, html
 
+EMPTY_FIGURE_PROPS = {"data": [], "layout": {}, "frames": []}
+
 app = Dash(
     __name__,
-    external_stylesheets=["https://codepen.io/chriddyp/pen/bWLwgP.css"],
+    external_stylesheets=[
+        "https://codepen.io/chriddyp/pen/bWLwgP.css",
+        dbc.themes.GRID,
+    ],
 )
 
 
@@ -49,7 +55,10 @@ app.layout = html.Div(
                     page_size=50,
                     fixed_rows={"headers": True},
                     style_table={"height": "300px", "overflowY": "auto"},
-                ),  # TODO: Treat all columns as strings to standardize filtering syntax?
+                ),
+                # NOTE: Could cast columns to strings for the datatable to standardize filtering syntax,
+                # but this results in undesirable effects (e.g., if there is session 1 and session 11,
+                # a query for "1" would return both)
             ],
             style={"margin-top": "10px", "margin-bottom": "10px"},
         ),
@@ -93,7 +102,22 @@ app.layout = html.Div(
                 ),
             ]
         ),
-        dcc.Graph(id="pipeline-completion", style={"display": "none"}),
+        dbc.Row(
+            [
+                # NOTE: Legend displayed for both graphs so that user can toggle visibility of status data
+                dbc.Col(
+                    dcc.Graph(
+                        id="fig-pipeline-status", style={"display": "none"}
+                    )
+                ),
+                dbc.Col(
+                    dcc.Graph(
+                        id="fig-pipeline-status-all-ses",
+                        style={"display": "none"},
+                    )
+                ),
+            ],
+        ),
     ]
 )
 
@@ -182,20 +206,55 @@ def reset_table(contents, filename):
 
 @app.callback(
     [
-        Output("pipeline-completion", "figure"),
-        Output("pipeline-completion", "style"),
+        Output("fig-pipeline-status-all-ses", "figure"),
+        Output("fig-pipeline-status-all-ses", "style"),
+    ],
+    Input("upload-data", "contents"),
+    State("upload-data", "filename"),
+    prevent_initial_call=True,
+)
+def generate_overview_status_fig_for_participants(contents, filename):
+    """
+    If new dataset uploaded, generate stacked bar plot of pipeline_complete statuses per session,
+    grouped by pipeline. Provides overview of the number of participants with each status in a given session,
+    per processing pipeline.
+    """
+    if contents is None:
+        raise PreventUpdate
+    data, total_subjects, sessions, upload_error = util.parse_csv_contents(
+        contents=contents, filename=filename
+    )
+    if upload_error is not None:
+        return EMPTY_FIGURE_PROPS, {"display": "none"}
+
+    return plot.plot_pipeline_status_by_participants(data), {
+        "display": "block"
+    }
+
+
+@app.callback(
+    [
+        Output("fig-pipeline-status", "figure"),
+        Output("fig-pipeline-status", "style"),
     ],
     Input(
         "interactive-datatable", "data"
     ),  # Input not triggered by datatable frontend filtering
     prevent_initial_call=True,
 )
-def update_overview_status_fig(data):
+def update_overview_status_fig_for_records(data):
+    """
+    When visible data in the overview datatable is updated (excluding built-in frontend datatable filtering
+    but including component filtering for multiple sessions), generate stacked bar plot of pipeline_complete
+    statuses aggregated by pipeline. Counts of statuses in plot thus correspond to unique records (unique
+    participant-session combinations).
+    """
     if data is not None:
-        df = pd.DataFrame.from_dict(data)
-        return util.create_overview_status_fig(df), {"display": "block"}
+        return plot.plot_pipeline_status_by_records(
+            pd.DataFrame.from_dict(data)
+        ), {"display": "block"}
 
-    return {"data": [], "layout": {}, "frames": []}, {"display": "none"}
+    return EMPTY_FIGURE_PROPS, {"display": "none"}
 
 
 if __name__ == "__main__":
