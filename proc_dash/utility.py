@@ -9,6 +9,15 @@ import pandas as pd
 SCHEMAS_PATH = Path(__file__).absolute().parents[1] / "schemas"
 
 
+def construct_legend_str(status_desc: dict) -> str:
+    """From a dictionary, constructs a legend-style string with multiple lines in the format of key: value."""
+    legend_str = ""
+    for status, desc in status_desc.items():
+        legend_str += status + ": " + desc + "\n"
+
+    return legend_str
+
+
 def get_required_bagel_columns() -> list:
     """Returns names of required columns from the bagel schema."""
     with open(SCHEMAS_PATH / "bagel_schema.json", "r") as file:
