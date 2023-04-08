@@ -14,13 +14,14 @@ from dash import Dash, ctx, dash_table, dcc, html
 
 EMPTY_FIGURE_PROPS = {"data": [], "layout": {}, "frames": []}
 
-app = Dash(
-    __name__,
-    external_stylesheets=[
-        "https://codepen.io/chriddyp/pen/bWLwgP.css",
-        dbc.themes.GRID,
-    ],
-)
+PIPE_COMPLETE_STATUS_SHORT_DESC = {
+    "SUCCESS": "All stages of pipeline finished successfully (all expected output files present).",
+    "FAIL": "At least one stage of the pipeline failed.",
+    "INCOMPLETE": "Pipeline has not yet been run or at least one stage is unfinished/still running.",
+    "UNAVAILABLE": "Relevant data modality for pipeline not available.",
+}
+
+app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 
 
 app.layout = html.Div(
@@ -28,14 +29,16 @@ app.layout = html.Div(
         html.H2(children="Neuroimaging Derivatives Status Dashboard"),
         dcc.Upload(
             id="upload-data",
-            children=html.Button("Drag and Drop or Select .csv File"),
+            children=dbc.Button(
+                "Drag and Drop or Select .csv File", color="secondary"
+            ),  # TODO: Constrain click responsive area of button
             style={"margin-top": "10px", "margin-bottom": "10px"},
             multiple=False,
         ),
         html.Div(
             id="output-data-upload",
             children=[
-                html.H6(id="input-filename"),
+                html.H4(id="input-filename"),
                 html.Div(
                     children=[
                         html.Div(id="total-participants"),
@@ -55,6 +58,9 @@ app.layout = html.Div(
                     page_size=50,
                     fixed_rows={"headers": True},
                     style_table={"height": "300px", "overflowY": "auto"},
+                    style_cell={
+                        "fontSize": 13  # accounts for font size inflation by dbc theme
+                    },
                 ),
                 # NOTE: Could cast columns to strings for the datatable to standardize filtering syntax,
                 # but this results in undesirable effects (e.g., if there is session 1 and session 11,
@@ -62,43 +68,80 @@ app.layout = html.Div(
             ],
             style={"margin-top": "10px", "margin-bottom": "10px"},
         ),
-        dbc.Card(
+        dbc.Row(
             [
-                # TODO: Put label and dropdown in same row
-                html.Div(
-                    [
-                        dbc.Label("Filter by multiple sessions:"),
-                        dcc.Dropdown(
-                            id="session-dropdown",
-                            options=[],
-                            multi=True,
-                            placeholder="Select one or more available sessions to filter by",
-                            # TODO: Can set `disabled=True` here to prevent any user interaction before file is uploaded
-                        ),
-                    ]
+                dbc.Col(
+                    dbc.Form(
+                        [
+                            # TODO: Put label and dropdown in same row
+                            html.Div(
+                                [
+                                    dbc.Label(
+                                        "Filter by multiple sessions:",
+                                        html_for="session-dropdown",
+                                        className="mb-0",
+                                    ),
+                                    dcc.Dropdown(
+                                        id="session-dropdown",
+                                        options=[],
+                                        multi=True,
+                                        placeholder="Select one or more available sessions to filter by",
+                                        # TODO: Can set `disabled=True` here to prevent any user interaction before file is uploaded
+                                    ),
+                                ],
+                                className="mb-2",  # Add margin to keep dropdowns spaced apart
+                            ),
+                            html.Div(
+                                [
+                                    dbc.Label(
+                                        "Selection operator:",
+                                        html_for="select-operator",
+                                        className="mb-0",
+                                    ),
+                                    dcc.Dropdown(
+                                        id="select-operator",
+                                        options=[
+                                            {
+                                                "label": "AND",
+                                                "value": "AND",
+                                                "title": "Show only participants with all selected sessions.",
+                                            },
+                                            {
+                                                "label": "OR",
+                                                "value": "OR",
+                                                "title": "Show participants with any of the selected sessions.",
+                                            },
+                                        ],
+                                        value="AND",
+                                        clearable=False,
+                                        # TODO: Can set `disabled=True` here to prevent any user interaction before file is uploaded
+                                    ),
+                                ],
+                                className="mb-2",
+                            ),
+                        ],
+                    )
                 ),
-                html.Div(
-                    [
-                        dbc.Label("Selection operator:"),
-                        dcc.Dropdown(
-                            id="select-operator",
-                            options=[
-                                {
-                                    "label": "AND",
-                                    "value": "AND",
-                                    "title": "Show only participants with all selected sessions.",
-                                },
-                                {
-                                    "label": "OR",
-                                    "value": "OR",
-                                    "title": "Show participants with any of the selected sessions.",
-                                },
-                            ],
-                            value="AND",
-                            clearable=False,
-                            # TODO: Can set `disabled=True` here to prevent any user interaction before file is uploaded
+                dbc.Col(
+                    dbc.Card(
+                        dbc.CardBody(
+                            [
+                                html.H5(
+                                    "Legend: Processing status",
+                                    className="card-title",
+                                ),
+                                html.P(
+                                    children=util.construct_legend_str(
+                                        PIPE_COMPLETE_STATUS_SHORT_DESC
+                                    ),
+                                    style={
+                                        "whiteSpace": "pre"  # preserve newlines
+                                    },
+                                    className="card-text",
+                                ),
+                            ]
                         ),
-                    ]
+                    )
                 ),
             ]
         ),
@@ -118,7 +161,8 @@ app.layout = html.Div(
                 ),
             ],
         ),
-    ]
+    ],
+    style={"padding": "10px 10px 10px 10px"},
 )
 
 
