@@ -83,7 +83,7 @@ def plot_pipeline_status_by_records(data: pd.DataFrame):
             "records": "Records (n)",
             "pipeline_complete": "Processing status",
         },
-        title="Selected sessions: Pipeline statuses of unique matching records (default: all)"
+        title="Selected sessions: Pipeline statuses of matching records (default: all)"
         # alternative title: "Pipeline statuses of unique records for selected sessions (default: all)"
     )
     fig.update_layout(margin=LAYOUTS["margin"], title=LAYOUTS["title"])
