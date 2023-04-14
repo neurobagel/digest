@@ -14,19 +14,13 @@ from dash import Dash, ctx, dash_table, dcc, html
 
 EMPTY_FIGURE_PROPS = {"data": [], "layout": {}, "frames": []}
 
-PIPE_COMPLETE_STATUS_SHORT_DESC = {
-    "SUCCESS": "All stages of pipeline finished successfully (all expected output files present).",
-    "FAIL": "At least one stage of the pipeline failed.",
-    "INCOMPLETE": "Pipeline has not yet been run or at least one stage is unfinished/still running.",
-    "UNAVAILABLE": "Relevant data modality for pipeline not available.",
-}
-
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 
 
 app.layout = html.Div(
     children=[
         html.H2(children="Neuroimaging Derivatives Status Dashboard"),
+        dcc.Store(id="memory"),
         dcc.Upload(
             id="upload-data",
             children=dbc.Button(
@@ -132,7 +126,7 @@ app.layout = html.Div(
                                 ),
                                 html.P(
                                     children=util.construct_legend_str(
-                                        PIPE_COMPLETE_STATUS_SHORT_DESC
+                                        util.PIPE_COMPLETE_STATUS_SHORT_DESC
                                     ),
                                     style={
                                         "whiteSpace": "pre"  # preserve newlines
@@ -168,28 +162,55 @@ app.layout = html.Div(
 
 @app.callback(
     [
-        Output("interactive-datatable", "columns"),
-        Output("interactive-datatable", "data"),
+        Output("memory", "data"),
         Output("total-participants", "children"),
         Output("session-dropdown", "options"),
     ],
     [
         Input("upload-data", "contents"),
         State("upload-data", "filename"),
+    ],
+)
+def process_bagel(contents, filename):
+    """
+    From the contents of a correctly-formatted uploaded .csv file, parse and store the pipeline overview
+    data as a dataframe and update the session dropdown options and displayed total participants count.
+    Returns any errors encountered during input file processing as a user-friendly message.
+    """
+    if contents is None:
+        return None, "Upload a CSV file to begin.", []
+    try:
+        data, total_subjects, sessions, upload_error = util.parse_csv_contents(
+            contents=contents, filename=filename
+        )
+    except Exception:
+        upload_error = "Something went wrong while processing this file."
+
+    if upload_error is not None:
+        return None, f"Error: {upload_error} Please try again.", []
+
+    report_total_subjects = f"Total number of participants: {total_subjects}"
+    session_opts = [{"label": ses, "value": ses} for ses in sessions]
+
+    return data.to_dict("records"), report_total_subjects, session_opts
+
+
+@app.callback(
+    [
+        Output("interactive-datatable", "columns"),
+        Output("interactive-datatable", "data"),
+    ],
+    [
+        Input("memory", "data"),
         Input("session-dropdown", "value"),
         Input("select-operator", "value"),
     ],
 )
-def update_outputs(contents, filename, session_values, operator_value):
-    if contents is None:
-        return None, None, "Upload a CSV file to begin.", []
+def update_outputs(parsed_data, session_values, operator_value):
+    if parsed_data is None:
+        return None, None
 
-    data, total_subjects, sessions, upload_error = util.parse_csv_contents(
-        contents=contents, filename=filename
-    )
-
-    if upload_error is not None:
-        return None, None, f"Error: {upload_error} Please try again.", []
+    data = pd.DataFrame.from_dict(parsed_data)
 
     if session_values:
         data = util.filter_by_sessions(
@@ -197,13 +218,10 @@ def update_outputs(contents, filename, session_values, operator_value):
             session_values=session_values,
             operator_value=operator_value,
         )
-
     tbl_columns = [{"name": i, "id": i} for i in data.columns]
     tbl_data = data.to_dict("records")
-    tbl_total_subjects = f"Total number of participants: {total_subjects}"
-    session_opts = [{"label": ses, "value": ses} for ses in sessions]
 
-    return tbl_columns, tbl_data, tbl_total_subjects, session_opts
+    return tbl_columns, tbl_data
 
 
 @app.callback(
@@ -240,8 +258,11 @@ def update_matching_participants(columns, virtual_data):
     State("upload-data", "filename"),
     prevent_initial_call=True,
 )
-def reset_table(contents, filename):
-    """If file contents change (i.e., new CSV uploaded), reset file name and filter selection values."""
+def reset_selections(contents, filename):
+    """
+    If file contents change (i.e., selected new CSV for upload), reset displayed file name and dropdown filter
+    selection values. Reset will occur regardless of whether there is an issue processing the selected file.
+    """
     if ctx.triggered_id == "upload-data":
         return f"Input file: {filename}", "", ""
 
@@ -253,27 +274,21 @@ def reset_table(contents, filename):
         Output("fig-pipeline-status-all-ses", "figure"),
         Output("fig-pipeline-status-all-ses", "style"),
     ],
-    Input("upload-data", "contents"),
-    State("upload-data", "filename"),
+    Input("memory", "data"),
     prevent_initial_call=True,
 )
-def generate_overview_status_fig_for_participants(contents, filename):
+def generate_overview_status_fig_for_participants(parsed_data):
     """
     If new dataset uploaded, generate stacked bar plot of pipeline_complete statuses per session,
     grouped by pipeline. Provides overview of the number of participants with each status in a given session,
     per processing pipeline.
     """
-    if contents is None:
-        raise PreventUpdate
-    data, total_subjects, sessions, upload_error = util.parse_csv_contents(
-        contents=contents, filename=filename
-    )
-    if upload_error is not None:
+    if parsed_data is None:
         return EMPTY_FIGURE_PROPS, {"display": "none"}
 
-    return plot.plot_pipeline_status_by_participants(data), {
-        "display": "block"
-    }
+    return plot.plot_pipeline_status_by_participants(
+        pd.DataFrame.from_dict(parsed_data)
+    ), {"display": "block"}
 
 
 @app.callback(

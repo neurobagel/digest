@@ -7,6 +7,12 @@ from typing import Optional, Tuple
 import pandas as pd
 
 SCHEMAS_PATH = Path(__file__).absolute().parents[1] / "schemas"
+PIPE_COMPLETE_STATUS_SHORT_DESC = {
+    "SUCCESS": "All stages of pipeline finished successfully (all expected output files present).",
+    "FAIL": "At least one stage of the pipeline failed.",
+    "INCOMPLETE": "Pipeline has not yet been run or at least one stage is unfinished/still running.",
+    "UNAVAILABLE": "Relevant data modality for pipeline not available.",
+}
 
 
 def construct_legend_str(status_desc: dict) -> str:
@@ -33,7 +39,7 @@ def get_required_bagel_columns() -> list:
 # TODO: When possible values per column have been finalized (waiting on mr_proc),
 # validate that each column only has acceptable values
 def get_missing_required_columns(bagel: pd.DataFrame) -> set:
-    """Returns error if required columns in bagel schema are missing."""
+    """Identifies any missing required columns in bagel schema."""
     missing_req_columns = set(get_required_bagel_columns()).difference(
         bagel.columns
     )
@@ -60,7 +66,7 @@ def extract_pipelines(bagel: pd.DataFrame) -> dict:
 
 
 def are_subjects_same_across_pipelines(bagel: pd.DataFrame) -> bool:
-    """Returns error if subjects and sessions are different across pipelines in the input."""
+    """Checks if subjects and sessions are the same across pipelines in the input."""
     pipelines_dict = extract_pipelines(bagel)
 
     pipeline_subject_sessions = [
