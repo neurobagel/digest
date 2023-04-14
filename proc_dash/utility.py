@@ -11,11 +11,9 @@ SCHEMAS_PATH = Path(__file__).absolute().parents[1] / "schemas"
 
 def construct_legend_str(status_desc: dict) -> str:
     """From a dictionary, constructs a legend-style string with multiple lines in the format of key: value."""
-    legend_str = ""
-    for status, desc in status_desc.items():
-        legend_str += status + ": " + desc + "\n"
-
-    return legend_str
+    return "\n".join(
+        [f"{status}: {desc}" for status, desc in status_desc.items()]
+    )
 
 
 def get_required_bagel_columns() -> list:
@@ -34,17 +32,14 @@ def get_required_bagel_columns() -> list:
 
 # TODO: When possible values per column have been finalized (waiting on mr_proc),
 # validate that each column only has acceptable values
-def check_required_columns(bagel: pd.DataFrame):
+def get_missing_required_columns(bagel: pd.DataFrame) -> set:
     """Returns error if required columns in bagel schema are missing."""
     missing_req_columns = set(get_required_bagel_columns()).difference(
         bagel.columns
     )
 
     # TODO: Check if there are any missing values in the `participant_id` column
-    if len(missing_req_columns) > 0:
-        raise LookupError(
-            f"The selected .csv is missing the following required metadata columns: {missing_req_columns}."
-        )
+    return missing_req_columns
 
 
 def extract_pipelines(bagel: pd.DataFrame) -> dict:
@@ -64,7 +59,7 @@ def extract_pipelines(bagel: pd.DataFrame) -> dict:
     return pipelines_dict
 
 
-def check_num_subjects(bagel: pd.DataFrame):
+def are_subjects_same_across_pipelines(bagel: pd.DataFrame) -> bool:
     """Returns error if subjects and sessions are different across pipelines in the input."""
     pipelines_dict = extract_pipelines(bagel)
 
@@ -73,13 +68,10 @@ def check_num_subjects(bagel: pd.DataFrame):
         for df in pipelines_dict.values()
     ]
 
-    if not all(
+    return all(
         pipeline.equals(pipeline_subject_sessions[0])
         for pipeline in pipeline_subject_sessions
-    ):
-        raise LookupError(
-            "The pipelines in bagel.csv do not have the same number of subjects and sessions."
-        )
+    )
 
 
 def count_unique_subjects(data: pd.DataFrame) -> int:
@@ -95,9 +87,6 @@ def get_pipelines_overview(bagel: pd.DataFrame) -> pd.DataFrame:
     Constructs a dataframe containing global statuses of pipelines in bagel.csv
     (based on "pipeline_complete" column) for each participant and session.
     """
-    check_required_columns(bagel)
-    check_num_subjects(bagel)
-
     pipeline_complete_df = bagel.pivot(
         index=["participant_id", "session"],
         columns=["pipeline_name", "pipeline_version"],
@@ -137,19 +126,18 @@ def parse_csv_contents(
     decoded = base64.b64decode(content_string)
 
     error_msg = None
-    try:
-        if ".csv" in filename:
-            bagel = pd.read_csv(io.StringIO(decoded.decode("utf-8")))
+    if ".csv" in filename:
+        bagel = pd.read_csv(io.StringIO(decoded.decode("utf-8")))
+        if len(missing_req_cols := get_missing_required_columns(bagel)) > 0:
+            error_msg = f"The selected .csv is missing the following required metadata columns: {missing_req_cols}."
+        elif not are_subjects_same_across_pipelines(bagel):
+            error_msg = "The pipelines in bagel.csv do not have the same number of subjects and sessions."
+        else:
             overview_df = get_pipelines_overview(bagel=bagel)
             total_subjects = count_unique_subjects(overview_df)
             sessions = overview_df["session"].sort_values().unique().tolist()
-        else:
-            error_msg = "Input file is not a .csv file."
-    except LookupError as err:
-        error_msg = str(err)
-    except Exception as exc:
-        print(exc)
-        error_msg = "Something went wrong while processing this file."
+    else:
+        error_msg = "Input file is not a .csv file."
 
     if error_msg is not None:
         return None, None, None, error_msg
