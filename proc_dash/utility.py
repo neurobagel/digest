@@ -44,7 +44,6 @@ def get_missing_required_columns(bagel: pd.DataFrame) -> set:
         bagel.columns
     )
 
-    # TODO: Check if there are any missing values in the `participant_id` column
     return missing_req_columns
 
 

@@ -183,7 +183,8 @@ def process_bagel(contents, filename):
         data, total_subjects, sessions, upload_error = util.parse_csv_contents(
             contents=contents, filename=filename
         )
-    except Exception:
+    except Exception as exc:
+        print(exc)  # for debugging
         upload_error = "Something went wrong while processing this file."
 
     if upload_error is not None:
