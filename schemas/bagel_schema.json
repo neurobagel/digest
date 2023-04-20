@@ -6,6 +6,12 @@
             "IsRequired": true,
             "IsPrefixedColumn": false
         },
+        "bids_id": {
+            "Description": "BIDS dataset identifier for a participant, if available/different from the participant_id.", 
+            "dtype": "str",
+            "IsRequired": false,
+            "IsPrefixedColumn": false
+        },
         "session": {
             "Description": "Participant session ID.", 
             "dtype": "str",

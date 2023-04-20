@@ -44,7 +44,6 @@ def get_missing_required_columns(bagel: pd.DataFrame) -> set:
         bagel.columns
     )
 
-    # TODO: Check if there are any missing values in the `participant_id` column
     return missing_req_columns
 
 
@@ -65,13 +64,21 @@ def extract_pipelines(bagel: pd.DataFrame) -> dict:
     return pipelines_dict
 
 
+def get_id_columns(data: pd.DataFrame) -> list:
+    """Returns names of columns which identify a given participant record"""
+    return (
+        ["participant_id", "bids_id", "session"]
+        if "bids_id" in data.columns
+        else ["participant_id", "session"]
+    )
+
+
 def are_subjects_same_across_pipelines(bagel: pd.DataFrame) -> bool:
     """Checks if subjects and sessions are the same across pipelines in the input."""
     pipelines_dict = extract_pipelines(bagel)
 
     pipeline_subject_sessions = [
-        df.loc[:, ["participant_id", "session"]]
-        for df in pipelines_dict.values()
+        df.loc[:, get_id_columns(bagel)] for df in pipelines_dict.values()
     ]
 
     return all(
@@ -94,7 +101,7 @@ def get_pipelines_overview(bagel: pd.DataFrame) -> pd.DataFrame:
     (based on "pipeline_complete" column) for each participant and session.
     """
     pipeline_complete_df = bagel.pivot(
-        index=["participant_id", "session"],
+        index=get_id_columns(bagel),
         columns=["pipeline_name", "pipeline_version"],
         values="pipeline_complete",
     )

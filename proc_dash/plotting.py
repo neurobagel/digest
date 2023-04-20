@@ -1,6 +1,8 @@
 import pandas as pd
 import plotly.express as px
 
+import proc_dash.utility as util
+
 STATUS_CMAP = px.colors.qualitative.Bold
 STATUS_COLORS = {
     "SUCCESS": STATUS_CMAP[5],
@@ -23,7 +25,7 @@ LAYOUTS = {
 def transform_data_to_long(data: pd.DataFrame) -> pd.DataFrame:
     return pd.melt(
         data,
-        id_vars=["participant_id", "session"],
+        id_vars=util.get_id_columns(data),
         var_name="pipeline_name",
         value_name="pipeline_complete",
     )
