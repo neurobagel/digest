@@ -50,11 +50,16 @@ app.layout = html.Div(
                     sort_mode="multi",
                     filter_action="native",
                     page_size=50,
-                    fixed_rows={"headers": True},
+                    # fixed_rows={"headers": True},
                     style_table={"height": "300px", "overflowY": "auto"},
                     style_cell={
                         "fontSize": 13  # accounts for font size inflation by dbc theme
                     },
+                    style_header={
+                        "position": "sticky",
+                        "top": 0,
+                    },  # Workaround to fixed_rows that does not impact column width. Could also specify widths in style_cell
+                    export_format="none",
                 ),
                 # NOTE: Could cast columns to strings for the datatable to standardize filtering syntax,
                 # but this results in undesirable effects (e.g., if there is session 1 and session 11,
@@ -165,6 +170,7 @@ app.layout = html.Div(
         Output("memory", "data"),
         Output("total-participants", "children"),
         Output("session-dropdown", "options"),
+        Output("interactive-datatable", "export_format"),
     ],
     [
         Input("upload-data", "contents"),
@@ -178,7 +184,7 @@ def process_bagel(contents, filename):
     Returns any errors encountered during input file processing as a user-friendly message.
     """
     if contents is None:
-        return None, "Upload a CSV file to begin.", []
+        return None, "Upload a CSV file to begin.", [], "none"
     try:
         data, total_subjects, sessions, upload_error = util.parse_csv_contents(
             contents=contents, filename=filename
@@ -188,12 +194,12 @@ def process_bagel(contents, filename):
         upload_error = "Something went wrong while processing this file."
 
     if upload_error is not None:
-        return None, f"Error: {upload_error} Please try again.", []
+        return None, f"Error: {upload_error} Please try again.", [], "none"
 
     report_total_subjects = f"Total number of participants: {total_subjects}"
     session_opts = [{"label": ses, "value": ses} for ses in sessions]
 
-    return data.to_dict("records"), report_total_subjects, session_opts
+    return data.to_dict("records"), report_total_subjects, session_opts, "csv"
 
 
 @app.callback(
@@ -219,7 +225,9 @@ def update_outputs(parsed_data, session_values, operator_value):
             session_values=session_values,
             operator_value=operator_value,
         )
-    tbl_columns = [{"name": i, "id": i} for i in data.columns]
+    tbl_columns = [
+        {"name": i, "id": i, "hideable": True} for i in data.columns
+    ]
     tbl_data = data.to_dict("records")
 
     return tbl_columns, tbl_data
