@@ -22,6 +22,15 @@ def construct_legend_str(status_desc: dict) -> str:
     )
 
 
+def construct_summary_str(data: pd.DataFrame) -> str:
+    """Creates summary of key counts for dataset."""
+    dataset_summary = f"""Total number of participants: {count_unique_subjects(data)}
+Total number of unique records (participant-session pairs): {count_unique_records(data)}
+Total number of unique sessions: {data["session"].nunique()}"""
+
+    return dataset_summary
+
+
 def get_required_bagel_columns() -> list:
     """Returns names of required columns from the bagel schema."""
     with open(SCHEMAS_PATH / "bagel_schema.json", "r") as file:
@@ -95,6 +104,12 @@ def count_unique_subjects(data: pd.DataFrame) -> int:
     )
 
 
+def count_unique_records(data: pd.DataFrame) -> int:
+    if all(col in data.columns for col in ["participant_id", "session"]):
+        return data[["participant_id", "session"]].drop_duplicates().shape[0]
+    return 0
+
+
 def get_pipelines_overview(bagel: pd.DataFrame) -> pd.DataFrame:
     """
     Constructs a dataframe containing global statuses of pipelines in bagel.csv
@@ -128,8 +143,6 @@ def parse_csv_contents(
     -------
     pd.DataFrame or None
         Dataframe containing global statuses of pipelines for each participant-session.
-    int or None
-        Total number of unique participants in the dataframe.
     list or None
         List of the unique session ids in the dataset.
     str or None
@@ -147,15 +160,14 @@ def parse_csv_contents(
             error_msg = "The pipelines in bagel.csv do not have the same number of subjects and sessions."
         else:
             overview_df = get_pipelines_overview(bagel=bagel)
-            total_subjects = count_unique_subjects(overview_df)
             sessions = overview_df["session"].sort_values().unique().tolist()
     else:
         error_msg = "Input file is not a .csv file."
 
     if error_msg is not None:
-        return None, None, None, error_msg
+        return None, None, error_msg
 
-    return overview_df, total_subjects, sessions, None
+    return overview_df, sessions, None
 
 
 def filter_by_sessions(
