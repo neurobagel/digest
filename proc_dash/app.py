@@ -295,7 +295,7 @@ def update_outputs(parsed_data, session_values, operator_value):
         Input("interactive-datatable", "derived_virtual_data"),
     ],
 )
-def update_matching_participants(columns, virtual_data):
+def update_matching_rows(columns, virtual_data):
     """
     If the visible data in the datatable changes, update counts of
     unique participants and records shown.
