@@ -23,7 +23,7 @@ decorator==5.1.1
 dill==0.3.6
 executing==1.2.0
 filelock==3.9.0
-Flask==2.2.2
+Flask==2.2.5
 h11==0.14.0
 identify==2.5.18
 idna==3.4
