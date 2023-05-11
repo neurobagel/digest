@@ -15,7 +15,7 @@ from dash import Dash, ctx, dash_table, dcc, html
 EMPTY_FIGURE_PROPS = {"data": [], "layout": {}, "frames": []}
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
-
+server = app.server
 
 app.layout = html.Div(
     children=[
