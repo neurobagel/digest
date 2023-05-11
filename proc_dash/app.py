@@ -10,9 +10,10 @@ from dash.exceptions import PreventUpdate
 
 import proc_dash.plotting as plot
 import proc_dash.utility as util
-from dash import Dash, ctx, dash_table, dcc, html
+from dash import Dash, ctx, dash_table, dcc, html, no_update
 
 EMPTY_FIGURE_PROPS = {"data": [], "layout": {}, "frames": []}
+NO_DISPLAY_ARG = {"style": {"display": "none"}}
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 
@@ -33,15 +34,48 @@ app.layout = html.Div(
             id="output-data-upload",
             children=[
                 html.H4(id="input-filename"),
-                html.Div(
-                    children=[
-                        html.Div(id="total-participants"),
-                        html.Div(
-                            id="matching-participants",
-                            style={"margin-left": "15px"},
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            html.Div(
+                                children=[
+                                    html.Div(
+                                        id="upload-message",  # NOTE: Temporary placeholder, to be removed once error alert elements are implemented
+                                    ),
+                                    html.Div(
+                                        id="matching-participants",
+                                    ),
+                                    html.Div(
+                                        id="matching-records",
+                                        style={"margin-left": "15px"},
+                                    ),
+                                ],
+                                style={"display": "inline-flex"},
+                            ),
+                            align="end",
                         ),
-                    ],
-                    style={"display": "inline-flex"},
+                        dbc.Col(
+                            dbc.Card(
+                                dbc.CardBody(
+                                    [
+                                        html.H5(
+                                            "Dataset summary",
+                                            className="card-title",
+                                        ),
+                                        html.P(
+                                            id="dataset-summary",
+                                            style={
+                                                "whiteSpace": "pre"  # preserve newlines
+                                            },
+                                            className="card-text",
+                                        ),
+                                    ],
+                                ),
+                                id="dataset-summary-card",
+                                **NO_DISPLAY_ARG,
+                            )
+                        ),
+                    ]
                 ),
                 dash_table.DataTable(
                     id="interactive-datatable",
@@ -126,7 +160,7 @@ app.layout = html.Div(
                         dbc.CardBody(
                             [
                                 html.H5(
-                                    "Legend: Processing status",
+                                    "Processing status legend",
                                     className="card-title",
                                 ),
                                 html.P(
@@ -147,15 +181,10 @@ app.layout = html.Div(
         dbc.Row(
             [
                 # NOTE: Legend displayed for both graphs so that user can toggle visibility of status data
+                dbc.Col(dcc.Graph(id="fig-pipeline-status", **NO_DISPLAY_ARG)),
                 dbc.Col(
                     dcc.Graph(
-                        id="fig-pipeline-status", style={"display": "none"}
-                    )
-                ),
-                dbc.Col(
-                    dcc.Graph(
-                        id="fig-pipeline-status-all-ses",
-                        style={"display": "none"},
+                        id="fig-pipeline-status-all-ses", **NO_DISPLAY_ARG
                     )
                 ),
             ],
@@ -168,9 +197,11 @@ app.layout = html.Div(
 @app.callback(
     [
         Output("memory", "data"),
-        Output("total-participants", "children"),
+        Output("upload-message", "children"),
         Output("session-dropdown", "options"),
         Output("interactive-datatable", "export_format"),
+        Output("dataset-summary", "children"),
+        Output("dataset-summary-card", "style"),
     ],
     [
         Input("upload-data", "contents"),
@@ -180,13 +211,20 @@ app.layout = html.Div(
 def process_bagel(contents, filename):
     """
     From the contents of a correctly-formatted uploaded .csv file, parse and store the pipeline overview
-    data as a dataframe and update the session dropdown options and displayed total participants count.
+    data as a dataframe and update the session dropdown options.
     Returns any errors encountered during input file processing as a user-friendly message.
     """
     if contents is None:
-        return None, "Upload a CSV file to begin.", [], "none"
+        return (
+            None,
+            "Upload a CSV file to begin.",
+            [],
+            no_update,
+            no_update,
+            no_update,
+        )
     try:
-        data, total_subjects, sessions, upload_error = util.parse_csv_contents(
+        data, sessions, upload_error = util.parse_csv_contents(
             contents=contents, filename=filename
         )
     except Exception as exc:
@@ -194,12 +232,26 @@ def process_bagel(contents, filename):
         upload_error = "Something went wrong while processing this file."
 
     if upload_error is not None:
-        return None, f"Error: {upload_error} Please try again.", [], "none"
+        return (
+            None,
+            f"Error: {upload_error} Please try again.",
+            [],
+            "none",
+            None,
+            {"display": "none"},
+        )
 
-    report_total_subjects = f"Total number of participants: {total_subjects}"
     session_opts = [{"label": ses, "value": ses} for ses in sessions]
+    dataset_summary = util.construct_summary_str(data)
 
-    return data.to_dict("records"), report_total_subjects, session_opts, "csv"
+    return (
+        data.to_dict("records"),
+        None,
+        session_opts,
+        "csv",
+        dataset_summary,
+        {"display": "block"},
+    )
 
 
 @app.callback(
@@ -234,7 +286,10 @@ def update_outputs(parsed_data, session_values, operator_value):
 
 
 @app.callback(
-    Output("matching-participants", "children"),
+    [
+        Output("matching-participants", "children"),
+        Output("matching-records", "children"),
+    ],
     [
         Input("interactive-datatable", "columns"),
         Input("interactive-datatable", "derived_virtual_data"),
@@ -242,8 +297,8 @@ def update_outputs(parsed_data, session_values, operator_value):
 )
 def update_matching_participants(columns, virtual_data):
     """
-    If the visible data in the datatable changes, update count of
-    unique participants shown ("Participants matching query").
+    If the visible data in the datatable changes, update counts of
+    unique participants and records shown.
 
     When no filter (built-in or dropdown-based) has been applied,
     this count will be the same as the total number of participants
@@ -252,9 +307,12 @@ def update_matching_participants(columns, virtual_data):
     # calculate participant count for active table as long as datatable columns exist
     if columns is not None and columns != []:
         active_df = pd.DataFrame.from_dict(virtual_data)
-        return f"Participants matching query: {util.count_unique_subjects(active_df)}"
+        return (
+            f"Participants matching filter: {util.count_unique_subjects(active_df)}",
+            f"Records matching filter: {util.count_unique_records(active_df)}",
+        )
 
-    return ""
+    return "", ""
 
 
 @app.callback(
