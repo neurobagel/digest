@@ -160,7 +160,9 @@ app.layout = html.Div(
                                     children=util.construct_legend_str(
                                         util.PIPE_COMPLETE_STATUS_SHORT_DESC
                                     ),
-                                    style={"whiteSpace": "pre"},  # preserve newlines
+                                    style={
+                                        "whiteSpace": "pre"  # preserve newlines
+                                    },
                                     className="card-text",
                                 ),
                             ]
@@ -172,7 +174,11 @@ app.layout = html.Div(
         dbc.Row(
             [
                 # NOTE: Legend displayed for both graphs so that user can toggle visibility of status data
-                dbc.Col(dcc.Graph(id="fig-pipeline-status", style={"display": "none"})),
+                dbc.Col(
+                    dcc.Graph(
+                        id="fig-pipeline-status", style={"display": "none"}
+                    )
+                ),
                 dbc.Col(
                     dcc.Graph(
                         id="fig-pipeline-status-all-ses",
@@ -336,9 +342,9 @@ def update_overview_status_fig_for_records(data):
     participant-session combinations).
     """
     if data is not None:
-        return plot.plot_pipeline_status_by_records(pd.DataFrame.from_dict(data)), {
-            "display": "block"
-        }
+        return plot.plot_pipeline_status_by_records(
+            pd.DataFrame.from_dict(data)
+        ), {"display": "block"}
 
     return EMPTY_FIGURE_PROPS, {"display": "none"}
 
