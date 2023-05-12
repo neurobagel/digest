@@ -17,9 +17,41 @@ EMPTY_FIGURE_PROPS = {"data": [], "layout": {}, "frames": []}
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 server = app.server
 
+# Navbar UI component
+navbar = dbc.Navbar(
+    dbc.Container(
+        [
+            dbc.Row(
+                dbc.Col(dbc.NavbarBrand("Neuroimaging Derivatives Status Dashboard")),
+                align="center",
+            ),
+            dbc.Row(
+                dbc.Col(
+                    dbc.Nav(
+                        dbc.Button(
+                            "View Code on GitHub",
+                            outline=True,
+                            color="light",
+                            href="https://github.com/neurobagel/proc_dash",
+                            # Turn off lowercase transformation for class .button in stylesheet
+                            style={"textTransform": "none"},
+                        ),
+                        className="ml-auto",
+                        navbar=True,
+                    ),
+                ),
+                align="center",
+            ),
+        ],
+        fluid=True,
+    ),
+    color="dark",
+    dark=True,
+)
+
 app.layout = html.Div(
     children=[
-        html.H2(children="Neuroimaging Derivatives Status Dashboard"),
+        navbar,
         dcc.Store(id="memory"),
         dcc.Upload(
             id="upload-data",
