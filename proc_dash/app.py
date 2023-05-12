@@ -29,9 +29,9 @@ navbar = dbc.Navbar(
                 dbc.Col(
                     dbc.Nav(
                         dbc.Button(
-                            "View Code on github",
+                            "View Code on GitHub",
                             outline=True,
-                            color="primary",
+                            color="light",
                             href="https://github.com/neurobagel/proc_dash",
                             # Turn off lowercase transformation for class .button in stylesheet
                             style={"textTransform": "none"},
