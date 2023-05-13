@@ -13,7 +13,6 @@ import proc_dash.utility as util
 from dash import Dash, ctx, dash_table, dcc, html, no_update
 
 EMPTY_FIGURE_PROPS = {"data": [], "layout": {}, "frames": []}
-NO_DISPLAY_ARG = {"style": {"display": "none"}}
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 
@@ -72,7 +71,7 @@ app.layout = html.Div(
                                     ],
                                 ),
                                 id="dataset-summary-card",
-                                **NO_DISPLAY_ARG,
+                                style={"display": "none"},
                             )
                         ),
                     ]
@@ -181,10 +180,15 @@ app.layout = html.Div(
         dbc.Row(
             [
                 # NOTE: Legend displayed for both graphs so that user can toggle visibility of status data
-                dbc.Col(dcc.Graph(id="fig-pipeline-status", **NO_DISPLAY_ARG)),
                 dbc.Col(
                     dcc.Graph(
-                        id="fig-pipeline-status-all-ses", **NO_DISPLAY_ARG
+                        id="fig-pipeline-status", style={"display": "none"}
+                    )
+                ),
+                dbc.Col(
+                    dcc.Graph(
+                        id="fig-pipeline-status-all-ses",
+                        style={"display": "none"},
                     )
                 ),
             ],

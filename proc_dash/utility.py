@@ -24,11 +24,9 @@ def construct_legend_str(status_desc: dict) -> str:
 
 def construct_summary_str(data: pd.DataFrame) -> str:
     """Creates summary of key counts for dataset."""
-    dataset_summary = f"""Total number of participants: {count_unique_subjects(data)}
+    return f"""Total number of participants: {count_unique_subjects(data)}
 Total number of unique records (participant-session pairs): {count_unique_records(data)}
 Total number of unique sessions: {data["session"].nunique()}"""
-
-    return dataset_summary
 
 
 def get_required_bagel_columns() -> list:
@@ -105,7 +103,8 @@ def count_unique_subjects(data: pd.DataFrame) -> int:
 
 
 def count_unique_records(data: pd.DataFrame) -> int:
-    if all(col in data.columns for col in ["participant_id", "session"]):
+    """Returns number of unique participant-session pairs."""
+    if set(["participant_id", "session"]).issubset(data.columns):
         return data[["participant_id", "session"]].drop_duplicates().shape[0]
     return 0
 
