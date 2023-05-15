@@ -4,6 +4,7 @@
 
 This tool ingests tabular processing derivative status files called `bagels`, which can be generated automatically by pipeline tracker scripts for datasets organized according to the standards of the [mr_proc](https://github.com/neurodatascience/mr_proc) workflow.
 
+## Preview
 ![alt text](https://github.com/neurobagel/proc_dash/blob/main/img/ui_overview_table.png?raw=true)
 
 ![alt text](https://github.com/neurobagel/proc_dash/blob/main/img/ui_overview_graphs.png?raw=true)
