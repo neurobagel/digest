@@ -33,7 +33,7 @@
             "IsPrefixedColumn": true
         },
         "HAS_CONTRAST__": {
-            "Description": "Whether or not participant session has specified imaging contrast type. Column suffix should correspond to a BIDS file suffix. e.g. 'HAS_CONTRAST__T1Weighted'",
+            "Description": "Whether or not participant session has specified imaging contrast type. Column suffix should correspond to a BIDS file suffix. e.g. 'HAS_CONTRAST__T1w'",
             "dtype": "bool",
             "IsRequired": false,
             "Range": [true, false],
