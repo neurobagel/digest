@@ -5,14 +5,15 @@ App accepts and parses a user-uploaded bagel.csv file (assumed to be generated b
 
 import dash_bootstrap_components as dbc
 import pandas as pd
-from dash.dependencies import Input, Output, State
-from dash.exceptions import PreventUpdate
 
 import proc_dash.plotting as plot
 import proc_dash.utility as util
 from dash import Dash, ctx, dash_table, dcc, html, no_update
+from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
 
 EMPTY_FIGURE_PROPS = {"data": [], "layout": {}, "frames": []}
+DEFAULT_NAME = "Dataset"
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 server = app.server
@@ -22,7 +23,11 @@ navbar = dbc.Navbar(
     dbc.Container(
         [
             dbc.Row(
-                dbc.Col(dbc.NavbarBrand("Neuroimaging Derivatives Status Dashboard")),
+                dbc.Col(
+                    dbc.NavbarBrand(
+                        "Neuroimaging Derivatives Status Dashboard"
+                    )
+                ),
                 align="center",
             ),
             dbc.Row(
@@ -49,6 +54,27 @@ navbar = dbc.Navbar(
     dark=True,
 )
 
+dataset_name_dialog = dbc.Modal(
+    children=[
+        dbc.ModalHeader(
+            dbc.ModalTitle("Enter the dataset name:"), close_button=False
+        ),
+        dbc.ModalBody(
+            dbc.Input(
+                id="dataset-name-input", placeholder=DEFAULT_NAME, type="text"
+            )
+        ),
+        dbc.ModalFooter(
+            dbc.Button(
+                "Submit", id="submit-name", className="ms-auto", n_clicks=0
+            )
+        ),
+    ],
+    id="dataset-name-modal",
+    is_open=False,
+    backdrop="static",  # do not close dialog when user clicks elsewhere on screen
+)
+
 app.layout = html.Div(
     children=[
         navbar,
@@ -61,6 +87,7 @@ app.layout = html.Div(
             style={"margin-top": "10px", "margin-bottom": "10px"},
             multiple=False,
         ),
+        dataset_name_dialog,
         html.Div(
             id="output-data-upload",
             children=[
@@ -90,7 +117,8 @@ app.layout = html.Div(
                                 dbc.CardBody(
                                     [
                                         html.H5(
-                                            "Dataset summary",
+                                            children=DEFAULT_NAME,
+                                            id="summary-title",
                                             className="card-title",
                                         ),
                                         html.P(
@@ -228,6 +256,34 @@ app.layout = html.Div(
     ],
     style={"padding": "10px 10px 10px 10px"},
 )
+
+
+@app.callback(
+    [
+        Output("dataset-name-modal", "is_open"),
+        Output("summary-title", "children"),
+        Output("dataset-name-input", "value"),
+    ],
+    [
+        Input("memory", "data"),
+        Input("submit-name", "n_clicks"),
+    ],
+    [
+        State("dataset-name-modal", "is_open"),
+        State("dataset-name-input", "value"),
+    ],
+    prevent_initial_call=True,
+)
+def toggle_dataset_name_dialog(
+    parsed_data, submit_clicks, is_open, name_value
+):
+    """Toggles a popup window for user to enter a dataset name when the data store changes."""
+    if parsed_data is not None:
+        if name_value not in [None, ""]:
+            return not is_open, name_value, None
+        return not is_open, DEFAULT_NAME, None
+
+    return is_open, None, None
 
 
 @app.callback(
