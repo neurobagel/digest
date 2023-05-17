@@ -54,7 +54,7 @@ def plot_pipeline_status_by_participants(data: pd.DataFrame):
             "pipeline_complete": "Processing status",
             "session": "Session",
         },
-        title="Overview: Participant pipeline statuses by session",
+        title="All participant pipeline statuses by session",
     )
     # Treat session labels as categorical in plot to avoid a continuous x-axis
     fig.update_xaxes(type="category")
@@ -84,7 +84,7 @@ def plot_pipeline_status_by_records(data: pd.DataFrame):
             "records": "Records (n)",
             "pipeline_complete": "Processing status",
         },
-        title="Selected sessions: Pipeline statuses of matching records (default: all)"
+        title="Pipeline statuses of records matching selected sessions (default: all)"
         # alternative title: "Pipeline statuses of unique records for selected sessions (default: all)"
     )
     fig.update_layout(margin=LAYOUTS["margin"], title=LAYOUTS["title"])
