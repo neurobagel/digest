@@ -5,14 +5,15 @@ App accepts and parses a user-uploaded bagel.csv file (assumed to be generated b
 
 import dash_bootstrap_components as dbc
 import pandas as pd
-from dash.dependencies import Input, Output, State
-from dash.exceptions import PreventUpdate
 
 import proc_dash.plotting as plot
 import proc_dash.utility as util
 from dash import Dash, ctx, dash_table, dcc, html, no_update
+from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
 
 EMPTY_FIGURE_PROPS = {"data": [], "layout": {}, "frames": []}
+DEFAULT_NAME = "Dataset"
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 server = app.server
@@ -22,7 +23,11 @@ navbar = dbc.Navbar(
     dbc.Container(
         [
             dbc.Row(
-                dbc.Col(dbc.NavbarBrand("Neuroimaging Derivatives Status Dashboard")),
+                dbc.Col(
+                    dbc.NavbarBrand(
+                        "Neuroimaging Derivatives Status Dashboard"
+                    )
+                ),
                 align="center",
             ),
             dbc.Row(
@@ -49,18 +54,152 @@ navbar = dbc.Navbar(
     dark=True,
 )
 
+upload = dcc.Upload(
+    id="upload-data",
+    children=dbc.Button(
+        "Drag and Drop or Select .csv File", color="secondary"
+    ),  # TODO: Constrain click responsive area of button
+    style={"margin-top": "10px", "margin-bottom": "10px"},
+    multiple=False,
+)
+
+dataset_name_dialog = dbc.Modal(
+    children=[
+        dbc.ModalHeader(
+            dbc.ModalTitle("Enter the dataset name:"), close_button=False
+        ),
+        dbc.ModalBody(
+            dbc.Input(
+                id="dataset-name-input", placeholder=DEFAULT_NAME, type="text"
+            )
+        ),
+        dbc.ModalFooter(
+            dbc.Button(
+                "Submit", id="submit-name", className="ms-auto", n_clicks=0
+            )
+        ),
+    ],
+    id="dataset-name-modal",
+    is_open=False,
+    backdrop="static",  # do not close dialog when user clicks elsewhere on screen
+)
+
+dataset_summary_card = dbc.Card(
+    dbc.CardBody(
+        [
+            html.H5(
+                children=DEFAULT_NAME,
+                id="summary-title",
+                className="card-title",
+            ),
+            html.P(
+                id="dataset-summary",
+                style={"whiteSpace": "pre"},  # preserve newlines
+                className="card-text",
+            ),
+        ],
+    ),
+    id="dataset-summary-card",
+    style={"display": "none"},
+)
+
+status_legend_card = dbc.Card(
+    dbc.CardBody(
+        [
+            html.H5(
+                "Processing status legend",
+                className="card-title",
+            ),
+            html.P(
+                children=util.construct_legend_str(
+                    util.PIPE_COMPLETE_STATUS_SHORT_DESC
+                ),
+                style={"whiteSpace": "pre"},  # preserve newlines
+                className="card-text",
+            ),
+        ]
+    ),
+)
+
+overview_table = dash_table.DataTable(
+    id="interactive-datatable",
+    data=None,
+    sort_action="native",
+    sort_mode="multi",
+    filter_action="native",
+    page_size=50,
+    # fixed_rows={"headers": True},
+    style_table={"height": "300px", "overflowY": "auto"},
+    style_cell={
+        "fontSize": 13  # accounts for font size inflation by dbc theme
+    },
+    style_header={
+        "position": "sticky",
+        "top": 0,
+    },  # Workaround to fixed_rows that does not impact column width. Could also specify widths in style_cell
+    export_format="none",
+)
+# NOTE: Could cast columns to strings for the datatable to standardize filtering syntax,
+# but this results in undesirable effects (e.g., if there is session 1 and session 11,
+# a query for "1" would return both)
+
+session_filter_form = dbc.Form(
+    [
+        # TODO: Put label and dropdown in same row
+        html.Div(
+            [
+                dbc.Label(
+                    "Filter by multiple sessions:",
+                    html_for="session-dropdown",
+                    className="mb-0",
+                ),
+                dcc.Dropdown(
+                    id="session-dropdown",
+                    options=[],
+                    multi=True,
+                    placeholder="Select one or more available sessions to filter by",
+                    # TODO: Can set `disabled=True` here to prevent any user interaction before file is uploaded
+                ),
+            ],
+            className="mb-2",  # Add margin to keep dropdowns spaced apart
+        ),
+        html.Div(
+            [
+                dbc.Label(
+                    "Selection operator:",
+                    html_for="select-operator",
+                    className="mb-0",
+                ),
+                dcc.Dropdown(
+                    id="select-operator",
+                    options=[
+                        {
+                            "label": "AND",
+                            "value": "AND",
+                            "title": "Show only participants with all selected sessions.",
+                        },
+                        {
+                            "label": "OR",
+                            "value": "OR",
+                            "title": "Show participants with any of the selected sessions.",
+                        },
+                    ],
+                    value="AND",
+                    clearable=False,
+                    # TODO: Can set `disabled=True` here to prevent any user interaction before file is uploaded
+                ),
+            ],
+            className="mb-2",
+        ),
+    ],
+)
+
 app.layout = html.Div(
     children=[
         navbar,
         dcc.Store(id="memory"),
-        dcc.Upload(
-            id="upload-data",
-            children=dbc.Button(
-                "Drag and Drop or Select .csv File", color="secondary"
-            ),  # TODO: Constrain click responsive area of button
-            style={"margin-top": "10px", "margin-bottom": "10px"},
-            multiple=False,
-        ),
+        upload,
+        dataset_name_dialog,
         html.Div(
             id="output-data-upload",
             children=[
@@ -86,126 +225,21 @@ app.layout = html.Div(
                             align="end",
                         ),
                         dbc.Col(
-                            dbc.Card(
-                                dbc.CardBody(
-                                    [
-                                        html.H5(
-                                            "Dataset summary",
-                                            className="card-title",
-                                        ),
-                                        html.P(
-                                            id="dataset-summary",
-                                            style={
-                                                "whiteSpace": "pre"  # preserve newlines
-                                            },
-                                            className="card-text",
-                                        ),
-                                    ],
-                                ),
-                                id="dataset-summary-card",
-                                style={"display": "none"},
-                            )
+                            dataset_summary_card,
                         ),
                     ]
                 ),
-                dash_table.DataTable(
-                    id="interactive-datatable",
-                    data=None,
-                    sort_action="native",
-                    sort_mode="multi",
-                    filter_action="native",
-                    page_size=50,
-                    # fixed_rows={"headers": True},
-                    style_table={"height": "300px", "overflowY": "auto"},
-                    style_cell={
-                        "fontSize": 13  # accounts for font size inflation by dbc theme
-                    },
-                    style_header={
-                        "position": "sticky",
-                        "top": 0,
-                    },  # Workaround to fixed_rows that does not impact column width. Could also specify widths in style_cell
-                    export_format="none",
-                ),
-                # NOTE: Could cast columns to strings for the datatable to standardize filtering syntax,
-                # but this results in undesirable effects (e.g., if there is session 1 and session 11,
-                # a query for "1" would return both)
+                overview_table,
             ],
             style={"margin-top": "10px", "margin-bottom": "10px"},
         ),
         dbc.Row(
             [
                 dbc.Col(
-                    dbc.Form(
-                        [
-                            # TODO: Put label and dropdown in same row
-                            html.Div(
-                                [
-                                    dbc.Label(
-                                        "Filter by multiple sessions:",
-                                        html_for="session-dropdown",
-                                        className="mb-0",
-                                    ),
-                                    dcc.Dropdown(
-                                        id="session-dropdown",
-                                        options=[],
-                                        multi=True,
-                                        placeholder="Select one or more available sessions to filter by",
-                                        # TODO: Can set `disabled=True` here to prevent any user interaction before file is uploaded
-                                    ),
-                                ],
-                                className="mb-2",  # Add margin to keep dropdowns spaced apart
-                            ),
-                            html.Div(
-                                [
-                                    dbc.Label(
-                                        "Selection operator:",
-                                        html_for="select-operator",
-                                        className="mb-0",
-                                    ),
-                                    dcc.Dropdown(
-                                        id="select-operator",
-                                        options=[
-                                            {
-                                                "label": "AND",
-                                                "value": "AND",
-                                                "title": "Show only participants with all selected sessions.",
-                                            },
-                                            {
-                                                "label": "OR",
-                                                "value": "OR",
-                                                "title": "Show participants with any of the selected sessions.",
-                                            },
-                                        ],
-                                        value="AND",
-                                        clearable=False,
-                                        # TODO: Can set `disabled=True` here to prevent any user interaction before file is uploaded
-                                    ),
-                                ],
-                                className="mb-2",
-                            ),
-                        ],
-                    )
+                    session_filter_form,
                 ),
                 dbc.Col(
-                    dbc.Card(
-                        dbc.CardBody(
-                            [
-                                html.H5(
-                                    "Processing status legend",
-                                    className="card-title",
-                                ),
-                                html.P(
-                                    children=util.construct_legend_str(
-                                        util.PIPE_COMPLETE_STATUS_SHORT_DESC
-                                    ),
-                                    style={
-                                        "whiteSpace": "pre"  # preserve newlines
-                                    },
-                                    className="card-text",
-                                ),
-                            ]
-                        ),
-                    )
+                    status_legend_card,
                 ),
             ]
         ),
@@ -228,6 +262,34 @@ app.layout = html.Div(
     ],
     style={"padding": "10px 10px 10px 10px"},
 )
+
+
+@app.callback(
+    [
+        Output("dataset-name-modal", "is_open"),
+        Output("summary-title", "children"),
+        Output("dataset-name-input", "value"),
+    ],
+    [
+        Input("memory", "data"),
+        Input("submit-name", "n_clicks"),
+    ],
+    [
+        State("dataset-name-modal", "is_open"),
+        State("dataset-name-input", "value"),
+    ],
+    prevent_initial_call=True,
+)
+def toggle_dataset_name_dialog(
+    parsed_data, submit_clicks, is_open, name_value
+):
+    """Toggles a popup window for user to enter a dataset name when the data store changes."""
+    if parsed_data is not None:
+        if name_value not in [None, ""]:
+            return not is_open, name_value, None
+        return not is_open, DEFAULT_NAME, None
+
+    return is_open, None, None
 
 
 @app.callback(
