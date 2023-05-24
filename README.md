@@ -19,7 +19,7 @@ You can view and download a correctly formatted, minimal input tabular file [her
 ## Local development
 To install `dash` from the source repository, run the following in a Python environment:
 ```bash
-git clone https://github.com/neurobagel/dash.git
+git clone https://github.com/neurobagel/proc_dash.git
 cd dash
 pip install -r requirements.txt
 ```
