@@ -58,9 +58,15 @@ upload = dcc.Upload(
     id="upload-data",
     children=dbc.Button(
         "Drag and Drop or Select .csv File", color="secondary"
-    ),  # TODO: Constrain click responsive area of button
-    style={"margin-top": "10px", "margin-bottom": "10px"},
+    ),
     multiple=False,
+)
+
+sample_data = dbc.Button(
+    "View sample input file",
+    color="light",
+    href="https://github.com/neurobagel/proc_dash/blob/main/tests/data/example_bagel.csv",
+    target="_blank",  # open external site in new tab
 )
 
 dataset_name_dialog = dbc.Modal(
@@ -198,7 +204,11 @@ app.layout = html.Div(
     children=[
         navbar,
         dcc.Store(id="memory"),
-        upload,
+        html.Div(
+            children=[upload, sample_data],
+            style={"margin-top": "10px", "margin-bottom": "10px"},
+            className="hstack gap-3",
+        ),
         dataset_name_dialog,
         html.Div(
             id="output-data-upload",
