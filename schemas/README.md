@@ -1,7 +1,7 @@
 # Schema for inputs to the dashboard
 
 ## `bagel_schema.json`
-This file describes the recognized columns in tabular inputs to the dashboard (`bagel.csv`).
+This file describes the recognized columns in tabular inputs to the dashboard (`bagel.csv`). Each row in a `bagel.csv` is expected to correspond to a single subject session (i.e., a unique pairing of `participant_id` and `session_id`), and is referred to as a "record."
 
 In the schema, columns are organized into two categories:  
 `GLOBAL_COLUMNS`: Includes columns describing metadata that should have the same meaning regardless of pipeline, and does not depend on pipeline outputs.  
