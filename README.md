@@ -22,7 +22,9 @@ The easiest way to obtain the necessary metadata from your dataset in a dashboar
 Detailed instructions to get started using the `mr_proc` workflow can be found in their [documentation](https://www.neurobagel.org/documentation/mr_proc/overview/). In brief, generating a `bagel.csv` for your dataset can be as simple as:
 1. Installing `mr_proc` to generate a dataset directory tree for your dataset (see [Installation](https://www.neurobagel.org/documentation/mr_proc/installation/) section of docs) that you can populate with your existing data
 2. Update `mr_proc` configuration to reflect the pipeline versions you are using, and augment your participant spreadsheet according to `mr_proc` requirements (see [Configs](https://www.neurobagel.org/documentation/mr_proc/configs/) section of docs)
-3. Run the tracker for the relevant pipeline(s) for your dataset to generate a comprehensive `bagel.csv` (this step can be repeated as needed to account for newly processed subjects)
+3. Run the tracker ([run_tracker.py](https://github.com/neurodatascience/mr_proc/blob/main/trackers/run_tracker.py)) for the relevant pipeline(s) for your dataset to generate a comprehensive `bagel.csv`
+    - To see help text for this script: `python run_tracker.py --help`
+    - This step can be repeated as needed to account for newly processed subjects
 
 ## Local development
 To install `dash` from the source repository, run the following in a Python environment:
