@@ -182,12 +182,12 @@ session_filter_form = dbc.Form(
                         {
                             "label": "AND",
                             "value": "AND",
-                            "title": "Show only participants with all selected sessions.",
+                            "title": "All selected sessions are present and match the pipeline-level filter.",
                         },
                         {
                             "label": "OR",
                             "value": "OR",
-                            "title": "Show participants with any of the selected sessions.",
+                            "title": "Any selected session is present and matches the pipeline-level filter.",
                         },
                     ],
                     value="AND",
