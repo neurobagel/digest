@@ -155,7 +155,7 @@ session_filter_form = dbc.Form(
         html.Div(
             [
                 dbc.Label(
-                    "Filter by multiple sessions:",
+                    "Filter by session(s):",
                     html_for="session-dropdown",
                     className="mb-0",
                 ),
@@ -164,7 +164,6 @@ session_filter_form = dbc.Form(
                     options=[],
                     multi=True,
                     placeholder="Select one or more available sessions to filter by",
-                    # TODO: Can set `disabled=True` here to prevent any user interaction before file is uploaded
                 ),
             ],
             className="mb-2",  # Add margin to keep dropdowns spaced apart
@@ -192,12 +191,13 @@ session_filter_form = dbc.Form(
                     ],
                     value="AND",
                     clearable=False,
-                    # TODO: Can set `disabled=True` here to prevent any user interaction before file is uploaded
                 ),
             ],
             className="mb-2",
         ),
     ],
+    id="session-filter-form",
+    style={"display": "none"},
 )
 
 app.layout = html.Div(
@@ -308,12 +308,14 @@ def toggle_dataset_name_dialog(
     return is_open, None, None
 
 
+# TODO: Refactor session related operations into separate callback that relies on memory-overview component
 @app.callback(
     [
         Output("memory-overview", "data"),
         Output("memory-pipelines", "data"),
         Output("upload-message", "children"),
         Output("session-dropdown", "options"),
+        Output("session-filter-form", "style"),
         Output("interactive-datatable", "export_format"),
         Output("dataset-summary", "children"),
         Output("dataset-summary-card", "style"),
@@ -338,6 +340,7 @@ def process_bagel(contents, filename):
             no_update,
             no_update,
             no_update,
+            no_update,
         )
     try:
         (
@@ -356,6 +359,7 @@ def process_bagel(contents, filename):
             None,
             f"Error: {upload_error} Please try again.",
             [],
+            {"display": "none"},
             "none",
             None,
             {"display": "none"},
@@ -373,6 +377,7 @@ def process_bagel(contents, filename):
         pipelines_dict,
         None,
         session_opts,
+        {"display": "block"},
         "csv",
         dataset_summary,
         {"display": "block"},
@@ -380,12 +385,19 @@ def process_bagel(contents, filename):
 
 
 @app.callback(
-    Output("pipeline-dropdown-container", "children"),
+    [
+        Output("pipeline-dropdown-container", "children"),
+        Output("interactive-datatable", "style_filter_conditional"),
+    ],
     Input("memory-pipelines", "data"),
     prevent_initial_call=True,
 )
 def create_pipeline_status_dropdowns(pipelines_dict):
-    children = []
+    """
+    Generates a dropdown filter with status options for each unique pipeline in the input csv,
+    and disables the native datatable filter UI for the corresponding columns in the datatable.
+    """
+    pipeline_dropdowns = []
 
     if pipelines_dict is not None:
         for pipeline in pipelines_dict:
@@ -407,9 +419,20 @@ def create_pipeline_status_dropdowns(pipelines_dict):
                     ),
                 ]
             )
-            children.append(new_pipeline_status_dropdown)
+            pipeline_dropdowns.append(new_pipeline_status_dropdown)
 
-    return children
+        # "session" column filter is also disabled due to implemented dropdown filters for session
+        style_disabled_filters = [
+            {
+                "if": {"column_id": c},
+                "pointer-events": "None",
+            }
+            for c in list(pipelines_dict.keys()) + ["session"]
+        ]
+
+        return pipeline_dropdowns, style_disabled_filters
+
+    return pipeline_dropdowns, None
 
 
 @app.callback(
