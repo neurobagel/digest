@@ -536,18 +536,25 @@ def generate_overview_status_fig_for_participants(parsed_data):
     Input(
         "interactive-datatable", "data"
     ),  # Input not triggered by datatable frontend filtering
+    State("memory-pipelines", "data"),
     prevent_initial_call=True,
 )
-def update_overview_status_fig_for_records(data):
+def update_overview_status_fig_for_records(data, pipelines_dict):
     """
     When visible data in the overview datatable is updated (excluding built-in frontend datatable filtering
-    but including component filtering for multiple sessions), generate stacked bar plot of pipeline_complete
-    statuses aggregated by pipeline. Counts of statuses in plot thus correspond to unique records (unique
-    participant-session combinations).
+    but including custom component filtering), generate stacked bar plot of pipeline_complete statuses aggregated
+    by pipeline. Counts of statuses in plot thus correspond to unique records (unique participant-session
+    combinations).
     """
     if data is not None:
-        return plot.plot_pipeline_status_by_records(
-            pd.DataFrame.from_dict(data)
+        data_df = pd.DataFrame.from_dict(data)
+        if not data_df.empty:
+            return plot.plot_pipeline_status_by_records(data_df), {
+                "display": "block"
+            }
+        return plot.plot_empty_pipeline_status_by_records(
+            pipelines=pipelines_dict.keys(),
+            statuses=util.PIPE_COMPLETE_STATUS_SHORT_DESC.keys(),
         ), {"display": "block"}
 
     return EMPTY_FIGURE_PROPS, {"display": "none"}
