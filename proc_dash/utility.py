@@ -132,10 +132,11 @@ def get_pipelines_overview(bagel: pd.DataFrame) -> pd.DataFrame:
     return pipeline_complete_df
 
 
+# TODO: Refactor csv parsing into its own function separate from the overview dataframe generation
 def parse_csv_contents(
     contents, filename
 ) -> Tuple[
-    Optional[pd.DataFrame], Optional[int], Optional[list], Optional[str]
+    Optional[pd.DataFrame], Optional[list], Optional[dict], Optional[str]
 ]:
     """
     Returns
@@ -144,6 +145,8 @@ def parse_csv_contents(
         Dataframe containing global statuses of pipelines for each participant-session.
     list or None
         List of the unique session ids in the dataset.
+    dict or None
+        Dictionary containing labels and dataframes for each pipeline.
     str or None
         Error raised during parsing of the input, if applicable.
     """
@@ -160,40 +163,64 @@ def parse_csv_contents(
         else:
             overview_df = get_pipelines_overview(bagel=bagel)
             sessions = overview_df["session"].sort_values().unique().tolist()
+            pipelines_dict = extract_pipelines(bagel=bagel)
     else:
         error_msg = "Input file is not a .csv file."
 
     if error_msg is not None:
-        return None, None, error_msg
+        return None, None, None, error_msg
 
-    return overview_df, sessions, None
+    return overview_df, sessions, pipelines_dict, None
 
 
-def filter_by_sessions(
-    data: pd.DataFrame, session_values: list, operator_value: str
+def filter_records(
+    data: pd.DataFrame,
+    session_values: list,
+    operator_value: str,
+    status_values: dict,
 ) -> pd.DataFrame:
     """
-    Returns dataframe filtered for data corresponding to the specified sessions,
-    for participants who have either any or all of the selected sessions, depending
-    on the selected operator.
+    Returns dataframe filtered for data corresponding to the specified sessions
+    and pipeline statuses. The selected operator value only has effect when >=1 session
+    has been selected, and determines whether the filter should be applied at the subject level
+    (all; all selected sessions should be present, with pipeline statuses of each matching the filter)
+    or at the session level (any; any selected session with pipeline statuses matching the filter).
 
     Note: This functionality is meant to complement the datatable's built-in
     column-wise filtering UI, since the filtering syntax does not readily support
-    intuitive queries for multiple specific values in a column.
+    intuitive queries for multiple specific values in a column, or multi-column queries.
     """
-    if operator_value == "AND":
+    pipeline_queries = [
+        f"`{pipeline}` == {repr(status_value)}"
+        for pipeline, status_value in status_values.items()
+        if status_value is not None
+    ]
+
+    if not session_values:
+        query = " and ".join(pipeline_queries)
+    elif operator_value == "AND":
         matching_subs = []
         for sub_id, sub in data.groupby("participant_id"):
             if all(
-                value in sub["session"].unique() for value in session_values
+                session in sub["session"].unique()
+                for session in session_values
             ):
-                matching_subs.append(sub_id)
-        data = data[
-            data["participant_id"].isin(matching_subs)
-            & data["session"].isin(session_values)
-        ]
+                if all(
+                    not sub.query(
+                        " and ".join(
+                            [f"session == {session}"] + pipeline_queries
+                        )
+                    ).empty
+                    for session in session_values
+                ):
+                    matching_subs.append(sub_id)
+        query = f"participant_id in {matching_subs} and session in {session_values}"
     else:
         if operator_value == "OR":
-            data = data[data["session"].isin(session_values)]
+            query = " and ".join(
+                [f"session in {session_values}"] + pipeline_queries
+            )
+
+    data = data.query(query)
 
     return data
