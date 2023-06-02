@@ -25,7 +25,7 @@ LAYOUTS = {
 }
 
 
-def transform_data_to_long(data: pd.DataFrame) -> pd.DataFrame:
+def transform_active_data_to_long(data: pd.DataFrame) -> pd.DataFrame:
     return pd.melt(
         data,
         id_vars=util.get_id_columns(data),
@@ -36,7 +36,7 @@ def transform_data_to_long(data: pd.DataFrame) -> pd.DataFrame:
 
 def plot_pipeline_status_by_participants(data: pd.DataFrame):
     status_counts = (
-        transform_data_to_long(data)
+        transform_active_data_to_long(data)
         .groupby(["pipeline_name", "pipeline_complete", "session"])
         .size()
         .reset_index(name="participants")
@@ -68,7 +68,7 @@ def plot_pipeline_status_by_participants(data: pd.DataFrame):
 
 def plot_pipeline_status_by_records(data: pd.DataFrame):
     status_counts = (
-        transform_data_to_long(data)
+        transform_active_data_to_long(data)
         .groupby(["pipeline_name", "pipeline_complete"])
         .size()
         .reset_index(name="records")
