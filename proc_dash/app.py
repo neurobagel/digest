@@ -8,7 +8,7 @@ import pandas as pd
 
 import proc_dash.plotting as plot
 import proc_dash.utility as util
-from dash import Dash, ctx, dash_table, dcc, html, no_update
+from dash import ALL, Dash, ctx, dash_table, dcc, html, no_update
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
@@ -203,7 +203,8 @@ session_filter_form = dbc.Form(
 app.layout = html.Div(
     children=[
         navbar,
-        dcc.Store(id="memory"),
+        dcc.Store(id="memory-overview"),
+        dcc.Store(id="memory-pipelines"),
         html.Div(
             children=[upload, sample_data],
             style={"margin-top": "10px", "margin-bottom": "10px"},
@@ -247,12 +248,17 @@ app.layout = html.Div(
             [
                 dbc.Col(
                     session_filter_form,
+                    width=3,
                 ),
                 dbc.Col(
-                    status_legend_card,
+                    dbc.Row(
+                        id="pipeline-dropdown-container",
+                        children=[],
+                    )
                 ),
             ]
         ),
+        status_legend_card,
         dbc.Row(
             [
                 # NOTE: Legend displayed for both graphs so that user can toggle visibility of status data
@@ -281,7 +287,7 @@ app.layout = html.Div(
         Output("dataset-name-input", "value"),
     ],
     [
-        Input("memory", "data"),
+        Input("memory-overview", "data"),
         Input("submit-name", "n_clicks"),
     ],
     [
@@ -304,7 +310,8 @@ def toggle_dataset_name_dialog(
 
 @app.callback(
     [
-        Output("memory", "data"),
+        Output("memory-overview", "data"),
+        Output("memory-pipelines", "data"),
         Output("upload-message", "children"),
         Output("session-dropdown", "options"),
         Output("interactive-datatable", "export_format"),
@@ -325,6 +332,7 @@ def process_bagel(contents, filename):
     if contents is None:
         return (
             None,
+            None,
             "Upload a CSV file to begin.",
             [],
             no_update,
@@ -332,15 +340,19 @@ def process_bagel(contents, filename):
             no_update,
         )
     try:
-        data, sessions, upload_error = util.parse_csv_contents(
-            contents=contents, filename=filename
-        )
+        (
+            overview_df,
+            sessions,
+            pipelines_dict,
+            upload_error,
+        ) = util.parse_csv_contents(contents=contents, filename=filename)
     except Exception as exc:
         print(exc)  # for debugging
         upload_error = "Something went wrong while processing this file."
 
     if upload_error is not None:
         return (
+            None,
             None,
             f"Error: {upload_error} Please try again.",
             [],
@@ -349,11 +361,16 @@ def process_bagel(contents, filename):
             {"display": "none"},
         )
 
+    # Change orientation of pipeline dataframe dictionary to enable storage as JSON data
+    for key in pipelines_dict:
+        pipelines_dict[key] = pipelines_dict[key].to_dict("records")
+
     session_opts = [{"label": ses, "value": ses} for ses in sessions]
-    dataset_summary = util.construct_summary_str(data)
+    dataset_summary = util.construct_summary_str(overview_df)
 
     return (
-        data.to_dict("records"),
+        overview_df.to_dict("records"),
+        pipelines_dict,
         None,
         session_opts,
         "csv",
@@ -363,27 +380,72 @@ def process_bagel(contents, filename):
 
 
 @app.callback(
+    Output("pipeline-dropdown-container", "children"),
+    Input("memory-pipelines", "data"),
+    prevent_initial_call=True,
+)
+def create_pipeline_status_dropdowns(pipelines_dict):
+    children = []
+
+    if pipelines_dict is not None:
+        for pipeline in pipelines_dict:
+            new_pipeline_status_dropdown = dbc.Col(
+                [
+                    dbc.Label(
+                        pipeline,
+                        className="mb-0",
+                    ),
+                    dcc.Dropdown(
+                        id={
+                            "type": "pipeline-status-dropdown",
+                            "index": pipeline,
+                        },
+                        options=list(
+                            util.PIPE_COMPLETE_STATUS_SHORT_DESC.keys()
+                        ),
+                        placeholder="Select status to filter for",
+                    ),
+                ]
+            )
+            children.append(new_pipeline_status_dropdown)
+
+    return children
+
+
+@app.callback(
     [
         Output("interactive-datatable", "columns"),
         Output("interactive-datatable", "data"),
     ],
     [
-        Input("memory", "data"),
+        Input("memory-overview", "data"),
         Input("session-dropdown", "value"),
         Input("select-operator", "value"),
+        Input({"type": "pipeline-status-dropdown", "index": ALL}, "value"),
+        State("memory-pipelines", "data"),
     ],
 )
-def update_outputs(parsed_data, session_values, operator_value):
+def update_outputs(
+    parsed_data,
+    session_values,
+    session_operator,
+    status_values,
+    pipelines_dict,
+):
     if parsed_data is None:
         return None, None
 
     data = pd.DataFrame.from_dict(parsed_data)
 
-    if session_values:
-        data = util.filter_by_sessions(
+    if session_values or not all(v is None for v in status_values):
+        pipeline_selected_filters = dict(
+            zip(pipelines_dict.keys(), status_values)
+        )
+        data = util.filter_records(
             data=data,
             session_values=session_values,
-            operator_value=operator_value,
+            operator_value=session_operator,
+            status_values=pipeline_selected_filters,
         )
     tbl_columns = [
         {"name": i, "id": i, "hideable": True} for i in data.columns
@@ -449,7 +511,7 @@ def reset_selections(contents, filename):
         Output("fig-pipeline-status-all-ses", "figure"),
         Output("fig-pipeline-status-all-ses", "style"),
     ],
-    Input("memory", "data"),
+    Input("memory-overview", "data"),
     prevent_initial_call=True,
 )
 def generate_overview_status_fig_for_participants(parsed_data):
