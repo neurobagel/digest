@@ -80,9 +80,12 @@ dataset_name_dialog = dbc.Modal(
             )
         ),
         dbc.ModalFooter(
-            dbc.Button(
-                "Submit", id="submit-name", className="ms-auto", n_clicks=0
-            )
+            [
+                dcc.Markdown("*Tip: To skip, press Submit or ESC*"),
+                dbc.Button(
+                    "Submit", id="submit-name", className="ms-auto", n_clicks=0
+                ),
+            ]
         ),
     ],
     id="dataset-name-modal",
