@@ -6,11 +6,11 @@ sub-02,2,TRUE,freesurfer,6.0.1,SUCCESS
 sub-03,1,TRUE,freesurfer,6.0.1,FAIL
 sub-03,2,TRUE,freesurfer,6.0.1,FAIL
 sub-01,1,TRUE,freesurfer,7.3.2,SUCCESS
-sub-01,2,TRUE,freesurfer,7.3.2,INCOMPLETE
+sub-01,2,TRUE,freesurfer,7.3.2,UNAVAILABLE
 sub-02,1,TRUE,freesurfer,7.3.2,SUCCESS
-sub-02,2,TRUE,freesurfer,7.3.2,INCOMPLETE
+sub-02,2,TRUE,freesurfer,7.3.2,UNAVAILABLE
 sub-03,1,TRUE,freesurfer,7.3.2,SUCCESS
-sub-03,2,TRUE,freesurfer,7.3.2,INCOMPLETE
+sub-03,2,TRUE,freesurfer,7.3.2,UNAVAILABLE
 sub-01,1,FALSE,fmriprep,20.2.7,UNAVAILABLE
 sub-01,2,FALSE,fmriprep,20.2.7,UNAVAILABLE
 sub-02,1,TRUE,fmriprep,20.2.7,SUCCESS
