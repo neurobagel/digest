@@ -10,8 +10,7 @@ SCHEMAS_PATH = Path(__file__).absolute().parents[1] / "schemas"
 PIPE_COMPLETE_STATUS_SHORT_DESC = {
     "SUCCESS": "All stages of pipeline finished successfully (all expected output files present).",
     "FAIL": "At least one stage of the pipeline failed.",
-    "INCOMPLETE": "Pipeline has not yet been run or at least one stage is unfinished/still running.",
-    "UNAVAILABLE": "Relevant data modality for pipeline not available.",
+    "UNAVAILABLE": "Pipeline has not yet been run (output directory not available).",
 }
 
 
