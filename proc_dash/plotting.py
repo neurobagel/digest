@@ -9,11 +9,10 @@ STATUS_CMAP = px.colors.qualitative.Bold
 STATUS_COLORS = {
     "SUCCESS": STATUS_CMAP[5],
     "FAIL": STATUS_CMAP[9],
-    "INCOMPLETE": STATUS_CMAP[3],
     "UNAVAILABLE": STATUS_CMAP[10],
 }
 # TODO: could use util.PIPE_COMPLETE_STATUS_SHORT_DESC to define below variable instead
-PIPELINE_STATUS_ORDER = ["SUCCESS", "FAIL", "INCOMPLETE", "UNAVAILABLE"]
+PIPELINE_STATUS_ORDER = ["SUCCESS", "FAIL", "UNAVAILABLE"]
 LAYOUTS = {
     "margin": {"l": 30, "r": 30, "t": 60, "b": 30},  # margins of chart
     "title": {  # figure title position properties
