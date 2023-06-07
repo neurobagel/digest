@@ -546,12 +546,12 @@ def generate_overview_status_fig_for_participants(parsed_data):
     grouped by pipeline. Provides overview of the number of participants with each status in a given session,
     per processing pipeline.
     """
-    if parsed_data is None:
-        return EMPTY_FIGURE_PROPS, {"display": "none"}
+    if parsed_data is not None:
+        return plot.plot_pipeline_status_by_participants(
+            pd.DataFrame.from_dict(parsed_data)
+        ), {"display": "block"}
 
-    return plot.plot_pipeline_status_by_participants(
-        pd.DataFrame.from_dict(parsed_data)
-    ), {"display": "block"}
+    return EMPTY_FIGURE_PROPS, {"display": "none"}
 
 
 @app.callback(
