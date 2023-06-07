@@ -463,7 +463,7 @@ def update_outputs(
 
     data = pd.DataFrame.from_dict(parsed_data)
 
-    if session_values or not all(v is None for v in status_values):
+    if session_values or any(v is not None for v in status_values):
         pipeline_selected_filters = dict(
             zip(pipelines_dict.keys(), status_values)
         )
@@ -574,14 +574,23 @@ def update_overview_status_fig_for_records(data, pipelines_dict):
     """
     if data is not None:
         data_df = pd.DataFrame.from_dict(data)
+
         if not data_df.empty:
-            return plot.plot_pipeline_status_by_records(data_df), {
-                "display": "block"
-            }
-        return plot.plot_empty_pipeline_status_by_records(
-            pipelines=pipelines_dict.keys(),
-            statuses=util.PIPE_COMPLETE_STATUS_SHORT_DESC.keys(),
-        ), {"display": "block"}
+            status_counts = (
+                plot.transform_active_data_to_long(data_df)
+                .groupby(["pipeline_name", "pipeline_complete"])
+                .size()
+                .reset_index(name="records")
+            )
+        else:
+            status_counts = plot.populate_empty_records_pipeline_status_plot(
+                pipelines=pipelines_dict.keys(),
+                statuses=util.PIPE_COMPLETE_STATUS_SHORT_DESC.keys(),
+            )
+
+        return plot.plot_pipeline_status_by_records(status_counts), {
+            "display": "block"
+        }
 
     return EMPTY_FIGURE_PROPS, {"display": "none"}
 

@@ -65,29 +65,7 @@ def plot_pipeline_status_by_participants(data: pd.DataFrame):
     return fig
 
 
-def plot_pipeline_status_by_records(data: pd.DataFrame):
-    status_counts = (
-        transform_active_data_to_long(data)
-        .groupby(["pipeline_name", "pipeline_complete"])
-        .size()
-        .reset_index(name="records")
-    )
-
-    return fig_pipeline_status_by_records(status_counts)
-
-
-def plot_empty_pipeline_status_by_records(pipelines: list, statuses: list):
-    """Generates version of matching records plot for 0 matching records (plot contains no data but correct labels)"""
-    status_counts = pd.DataFrame(
-        list(product(pipelines, statuses)),
-        columns=["pipeline_name", "pipeline_complete"],
-    )
-    status_counts["records"] = 0
-
-    return fig_pipeline_status_by_records(status_counts)
-
-
-def fig_pipeline_status_by_records(status_counts: pd.DataFrame):
+def plot_pipeline_status_by_records(status_counts: pd.DataFrame):
     fig = px.bar(
         status_counts,
         x="pipeline_name",
@@ -111,3 +89,16 @@ def fig_pipeline_status_by_records(status_counts: pd.DataFrame):
     fig.update_layout(margin=LAYOUTS["margin"], title=LAYOUTS["title"])
 
     return fig
+
+
+def populate_empty_records_pipeline_status_plot(
+    pipelines: list, statuses: list
+) -> pd.DataFrame:
+    """Returns dataframe of counts representing 0 matching records in the datatable, i.e., 0 records with each pipeline status."""
+    status_counts = pd.DataFrame(
+        list(product(pipelines, statuses)),
+        columns=["pipeline_name", "pipeline_complete"],
+    )
+    status_counts["records"] = 0
+
+    return status_counts
