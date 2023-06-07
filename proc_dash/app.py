@@ -464,6 +464,9 @@ def update_outputs(
     data = pd.DataFrame.from_dict(parsed_data)
 
     if session_values or any(v is not None for v in status_values):
+        # NOTE: The order in which pipeline-specific dropdowns are added to the layout is determined by the
+        # order of pipelines in the pipeline-specific data store (see callback that generates the dropdowns).
+        # As a result, the dropdown values passed to a callback will also follow this same pipeline order.
         pipeline_selected_filters = dict(
             zip(pipelines_dict.keys(), status_values)
         )
