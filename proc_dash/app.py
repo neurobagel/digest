@@ -8,7 +8,7 @@ import pandas as pd
 
 import proc_dash.plotting as plot
 import proc_dash.utility as util
-from dash import Dash, ctx, dash_table, dcc, html, no_update
+from dash import ALL, Dash, ctx, dash_table, dcc, html, no_update
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
@@ -80,9 +80,12 @@ dataset_name_dialog = dbc.Modal(
             )
         ),
         dbc.ModalFooter(
-            dbc.Button(
-                "Submit", id="submit-name", className="ms-auto", n_clicks=0
-            )
+            [
+                dcc.Markdown("*Tip: To skip, press Submit or ESC*"),
+                dbc.Button(
+                    "Submit", id="submit-name", className="ms-auto", n_clicks=0
+                ),
+            ]
         ),
     ],
     id="dataset-name-modal",
@@ -155,7 +158,7 @@ session_filter_form = dbc.Form(
         html.Div(
             [
                 dbc.Label(
-                    "Filter by multiple sessions:",
+                    "Filter by session(s):",
                     html_for="session-dropdown",
                     className="mb-0",
                 ),
@@ -164,7 +167,6 @@ session_filter_form = dbc.Form(
                     options=[],
                     multi=True,
                     placeholder="Select one or more available sessions to filter by",
-                    # TODO: Can set `disabled=True` here to prevent any user interaction before file is uploaded
                 ),
             ],
             className="mb-2",  # Add margin to keep dropdowns spaced apart
@@ -182,28 +184,30 @@ session_filter_form = dbc.Form(
                         {
                             "label": "AND",
                             "value": "AND",
-                            "title": "Show only participants with all selected sessions.",
+                            "title": "All selected sessions are present and match the pipeline-level filter.",
                         },
                         {
                             "label": "OR",
                             "value": "OR",
-                            "title": "Show participants with any of the selected sessions.",
+                            "title": "Any selected session is present and matches the pipeline-level filter.",
                         },
                     ],
                     value="AND",
                     clearable=False,
-                    # TODO: Can set `disabled=True` here to prevent any user interaction before file is uploaded
                 ),
             ],
             className="mb-2",
         ),
     ],
+    id="session-filter-form",
+    style={"display": "none"},
 )
 
 app.layout = html.Div(
     children=[
         navbar,
-        dcc.Store(id="memory"),
+        dcc.Store(id="memory-overview"),
+        dcc.Store(id="memory-pipelines"),
         html.Div(
             children=[upload, sample_data],
             style={"margin-top": "10px", "margin-bottom": "10px"},
@@ -247,12 +251,17 @@ app.layout = html.Div(
             [
                 dbc.Col(
                     session_filter_form,
+                    width=3,
                 ),
                 dbc.Col(
-                    status_legend_card,
+                    dbc.Row(
+                        id="pipeline-dropdown-container",
+                        children=[],
+                    )
                 ),
             ]
         ),
+        status_legend_card,
         dbc.Row(
             [
                 # NOTE: Legend displayed for both graphs so that user can toggle visibility of status data
@@ -281,7 +290,7 @@ app.layout = html.Div(
         Output("dataset-name-input", "value"),
     ],
     [
-        Input("memory", "data"),
+        Input("memory-overview", "data"),
         Input("submit-name", "n_clicks"),
     ],
     [
@@ -302,11 +311,14 @@ def toggle_dataset_name_dialog(
     return is_open, None, None
 
 
+# TODO: Refactor session related operations into separate callback that relies on memory-overview component
 @app.callback(
     [
-        Output("memory", "data"),
+        Output("memory-overview", "data"),
+        Output("memory-pipelines", "data"),
         Output("upload-message", "children"),
         Output("session-dropdown", "options"),
+        Output("session-filter-form", "style"),
         Output("interactive-datatable", "export_format"),
         Output("dataset-summary", "children"),
         Output("dataset-summary-card", "style"),
@@ -325,16 +337,21 @@ def process_bagel(contents, filename):
     if contents is None:
         return (
             None,
+            None,
             "Upload a CSV file to begin.",
             [],
             no_update,
             no_update,
             no_update,
+            no_update,
         )
     try:
-        data, sessions, upload_error = util.parse_csv_contents(
-            contents=contents, filename=filename
-        )
+        (
+            overview_df,
+            sessions,
+            pipelines_dict,
+            upload_error,
+        ) = util.parse_csv_contents(contents=contents, filename=filename)
     except Exception as exc:
         print(exc)  # for debugging
         upload_error = "Something went wrong while processing this file."
@@ -342,20 +359,28 @@ def process_bagel(contents, filename):
     if upload_error is not None:
         return (
             None,
+            None,
             f"Error: {upload_error} Please try again.",
             [],
+            {"display": "none"},
             "none",
             None,
             {"display": "none"},
         )
 
+    # Change orientation of pipeline dataframe dictionary to enable storage as JSON data
+    for key in pipelines_dict:
+        pipelines_dict[key] = pipelines_dict[key].to_dict("records")
+
     session_opts = [{"label": ses, "value": ses} for ses in sessions]
-    dataset_summary = util.construct_summary_str(data)
+    dataset_summary = util.construct_summary_str(overview_df)
 
     return (
-        data.to_dict("records"),
+        overview_df.to_dict("records"),
+        pipelines_dict,
         None,
         session_opts,
+        {"display": "block"},
         "csv",
         dataset_summary,
         {"display": "block"},
@@ -364,26 +389,92 @@ def process_bagel(contents, filename):
 
 @app.callback(
     [
+        Output("pipeline-dropdown-container", "children"),
+        Output("interactive-datatable", "style_filter_conditional"),
+    ],
+    Input("memory-pipelines", "data"),
+    prevent_initial_call=True,
+)
+def create_pipeline_status_dropdowns(pipelines_dict):
+    """
+    Generates a dropdown filter with status options for each unique pipeline in the input csv,
+    and disables the native datatable filter UI for the corresponding columns in the datatable.
+    """
+    pipeline_dropdowns = []
+
+    if pipelines_dict is not None:
+        for pipeline in pipelines_dict:
+            new_pipeline_status_dropdown = dbc.Col(
+                [
+                    dbc.Label(
+                        pipeline,
+                        className="mb-0",
+                    ),
+                    dcc.Dropdown(
+                        id={
+                            "type": "pipeline-status-dropdown",
+                            "index": pipeline,
+                        },
+                        options=list(
+                            util.PIPE_COMPLETE_STATUS_SHORT_DESC.keys()
+                        ),
+                        placeholder="Select status to filter for",
+                    ),
+                ]
+            )
+            pipeline_dropdowns.append(new_pipeline_status_dropdown)
+
+        # "session" column filter is also disabled due to implemented dropdown filters for session
+        style_disabled_filters = [
+            {
+                "if": {"column_id": c},
+                "pointer-events": "None",
+            }
+            for c in list(pipelines_dict.keys()) + ["session"]
+        ]
+
+        return pipeline_dropdowns, style_disabled_filters
+
+    return pipeline_dropdowns, None
+
+
+@app.callback(
+    [
         Output("interactive-datatable", "columns"),
         Output("interactive-datatable", "data"),
     ],
     [
-        Input("memory", "data"),
+        Input("memory-overview", "data"),
         Input("session-dropdown", "value"),
         Input("select-operator", "value"),
+        Input({"type": "pipeline-status-dropdown", "index": ALL}, "value"),
+        State("memory-pipelines", "data"),
     ],
 )
-def update_outputs(parsed_data, session_values, operator_value):
+def update_outputs(
+    parsed_data,
+    session_values,
+    session_operator,
+    status_values,
+    pipelines_dict,
+):
     if parsed_data is None:
         return None, None
 
     data = pd.DataFrame.from_dict(parsed_data)
 
-    if session_values:
-        data = util.filter_by_sessions(
+    if session_values or any(v is not None for v in status_values):
+        # NOTE: The order in which pipeline-specific dropdowns are added to the layout is determined by the
+        # order of pipelines in the pipeline-specific data store (see callback that generates the dropdowns).
+        # As a result, the dropdown values passed to a callback will also follow this same pipeline order.
+        pipeline_selected_filters = dict(
+            zip(pipelines_dict.keys(), status_values)
+        )
+        data = util.filter_records(
             data=data,
             session_values=session_values,
-            operator_value=operator_value,
+            operator_value=session_operator,
+            status_values=pipeline_selected_filters,
         )
     tbl_columns = [
         {"name": i, "id": i, "hideable": True} for i in data.columns
@@ -449,7 +540,7 @@ def reset_selections(contents, filename):
         Output("fig-pipeline-status-all-ses", "figure"),
         Output("fig-pipeline-status-all-ses", "style"),
     ],
-    Input("memory", "data"),
+    Input("memory-overview", "data"),
     prevent_initial_call=True,
 )
 def generate_overview_status_fig_for_participants(parsed_data):
@@ -458,12 +549,12 @@ def generate_overview_status_fig_for_participants(parsed_data):
     grouped by pipeline. Provides overview of the number of participants with each status in a given session,
     per processing pipeline.
     """
-    if parsed_data is None:
-        return EMPTY_FIGURE_PROPS, {"display": "none"}
+    if parsed_data is not None:
+        return plot.plot_pipeline_status_by_participants(
+            pd.DataFrame.from_dict(parsed_data)
+        ), {"display": "block"}
 
-    return plot.plot_pipeline_status_by_participants(
-        pd.DataFrame.from_dict(parsed_data)
-    ), {"display": "block"}
+    return EMPTY_FIGURE_PROPS, {"display": "none"}
 
 
 @app.callback(
@@ -474,19 +565,35 @@ def generate_overview_status_fig_for_participants(parsed_data):
     Input(
         "interactive-datatable", "data"
     ),  # Input not triggered by datatable frontend filtering
+    State("memory-pipelines", "data"),
     prevent_initial_call=True,
 )
-def update_overview_status_fig_for_records(data):
+def update_overview_status_fig_for_records(data, pipelines_dict):
     """
     When visible data in the overview datatable is updated (excluding built-in frontend datatable filtering
-    but including component filtering for multiple sessions), generate stacked bar plot of pipeline_complete
-    statuses aggregated by pipeline. Counts of statuses in plot thus correspond to unique records (unique
-    participant-session combinations).
+    but including custom component filtering), generate stacked bar plot of pipeline_complete statuses aggregated
+    by pipeline. Counts of statuses in plot thus correspond to unique records (unique participant-session
+    combinations).
     """
     if data is not None:
-        return plot.plot_pipeline_status_by_records(
-            pd.DataFrame.from_dict(data)
-        ), {"display": "block"}
+        data_df = pd.DataFrame.from_dict(data)
+
+        if not data_df.empty:
+            status_counts = (
+                plot.transform_active_data_to_long(data_df)
+                .groupby(["pipeline_name", "pipeline_complete"])
+                .size()
+                .reset_index(name="records")
+            )
+        else:
+            status_counts = plot.populate_empty_records_pipeline_status_plot(
+                pipelines=pipelines_dict.keys(),
+                statuses=util.PIPE_COMPLETE_STATUS_SHORT_DESC.keys(),
+            )
+
+        return plot.plot_pipeline_status_by_records(status_counts), {
+            "display": "block"
+        }
 
     return EMPTY_FIGURE_PROPS, {"display": "none"}
 

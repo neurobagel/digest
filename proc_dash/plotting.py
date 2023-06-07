@@ -1,3 +1,5 @@
+from itertools import product
+
 import pandas as pd
 import plotly.express as px
 
@@ -9,6 +11,7 @@ STATUS_COLORS = {
     "FAIL": STATUS_CMAP[9],
     "UNAVAILABLE": STATUS_CMAP[10],
 }
+# TODO: could use util.PIPE_COMPLETE_STATUS_SHORT_DESC to define below variable instead
 PIPELINE_STATUS_ORDER = ["SUCCESS", "FAIL", "UNAVAILABLE"]
 LAYOUTS = {
     "margin": {"l": 30, "r": 30, "t": 60, "b": 30},  # margins of chart
@@ -21,7 +24,7 @@ LAYOUTS = {
 }
 
 
-def transform_data_to_long(data: pd.DataFrame) -> pd.DataFrame:
+def transform_active_data_to_long(data: pd.DataFrame) -> pd.DataFrame:
     return pd.melt(
         data,
         id_vars=util.get_id_columns(data),
@@ -32,7 +35,7 @@ def transform_data_to_long(data: pd.DataFrame) -> pd.DataFrame:
 
 def plot_pipeline_status_by_participants(data: pd.DataFrame):
     status_counts = (
-        transform_data_to_long(data)
+        transform_active_data_to_long(data)
         .groupby(["pipeline_name", "pipeline_complete", "session"])
         .size()
         .reset_index(name="participants")
@@ -62,30 +65,40 @@ def plot_pipeline_status_by_participants(data: pd.DataFrame):
     return fig
 
 
-def plot_pipeline_status_by_records(data: pd.DataFrame):
-    status_counts = (
-        transform_data_to_long(data)
-        .groupby(["pipeline_name", "pipeline_complete"])
-        .size()
-        .reset_index(name="records")
-    )
-
+def plot_pipeline_status_by_records(status_counts: pd.DataFrame):
     fig = px.bar(
         status_counts,
         x="pipeline_name",
         y="records",
         color="pipeline_complete",
         text_auto=True,
-        category_orders={"pipeline_complete": PIPELINE_STATUS_ORDER},
+        category_orders={
+            "pipeline_complete": PIPELINE_STATUS_ORDER,
+            "pipeline_name": status_counts["pipeline_name"]
+            .drop_duplicates()
+            .sort_values(),
+        },
         color_discrete_map=STATUS_COLORS,
         labels={
             "pipeline_name": "Pipeline",
             "records": "Records (n)",
             "pipeline_complete": "Processing status",
         },
-        title="Pipeline statuses of records matching selected sessions (default: all)"
-        # alternative title: "Pipeline statuses of unique records for selected sessions (default: all)"
+        title="Pipeline statuses of records matching filter (default: all)",
     )
     fig.update_layout(margin=LAYOUTS["margin"], title=LAYOUTS["title"])
 
     return fig
+
+
+def populate_empty_records_pipeline_status_plot(
+    pipelines: list, statuses: list
+) -> pd.DataFrame:
+    """Returns dataframe of counts representing 0 matching records in the datatable, i.e., 0 records with each pipeline status."""
+    status_counts = pd.DataFrame(
+        list(product(pipelines, statuses)),
+        columns=["pipeline_name", "pipeline_complete"],
+    )
+    status_counts["records"] = 0
+
+    return status_counts
