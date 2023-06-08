@@ -311,14 +311,11 @@ def toggle_dataset_name_dialog(
     return is_open, None, None
 
 
-# TODO: Refactor session related operations into separate callback that relies on memory-overview component
 @app.callback(
     [
         Output("memory-overview", "data"),
         Output("memory-pipelines", "data"),
         Output("upload-message", "children"),
-        Output("session-dropdown", "options"),
-        Output("session-filter-form", "style"),
         Output("interactive-datatable", "export_format"),
         Output("dataset-summary", "children"),
         Output("dataset-summary-card", "style"),
@@ -330,8 +327,8 @@ def toggle_dataset_name_dialog(
 )
 def process_bagel(contents, filename):
     """
-    From the contents of a correctly-formatted uploaded .csv file, parse and store the pipeline overview
-    data as a dataframe and update the session dropdown options.
+    From the contents of a correctly-formatted uploaded .csv file, parse and store (1) the pipeline overview
+    data as a dataframe, and (2) pipeline-specific metadata as individual dataframes within a dict.
     Returns any errors encountered during input file processing as a user-friendly message.
     """
     if contents is None:
@@ -339,8 +336,6 @@ def process_bagel(contents, filename):
             None,
             None,
             "Upload a CSV file to begin.",
-            [],
-            no_update,
             no_update,
             no_update,
             no_update,
@@ -348,7 +343,6 @@ def process_bagel(contents, filename):
     try:
         (
             overview_df,
-            sessions,
             pipelines_dict,
             upload_error,
         ) = util.parse_csv_contents(contents=contents, filename=filename)
@@ -361,8 +355,6 @@ def process_bagel(contents, filename):
             None,
             None,
             f"Error: {upload_error} Please try again.",
-            [],
-            {"display": "none"},
             "none",
             None,
             {"display": "none"},
@@ -372,19 +364,36 @@ def process_bagel(contents, filename):
     for key in pipelines_dict:
         pipelines_dict[key] = pipelines_dict[key].to_dict("records")
 
-    session_opts = [{"label": ses, "value": ses} for ses in sessions]
     dataset_summary = util.construct_summary_str(overview_df)
 
     return (
         overview_df.to_dict("records"),
         pipelines_dict,
         None,
-        session_opts,
-        {"display": "block"},
         "csv",
         dataset_summary,
         {"display": "block"},
     )
+
+
+@app.callback(
+    [
+        Output("session-dropdown", "options"),
+        Output("session-filter-form", "style"),
+    ],
+    Input("memory-overview", "data"),
+    prevent_initial_update=True,
+)
+def update_session_filter(parsed_data):
+    """When uploaded data changes, update the unique session options and visibility of the session filter dropdown."""
+    if parsed_data is None:
+        return [], {"display": "none"}
+
+    overview_df = pd.DataFrame.from_dict(parsed_data)
+    sessions = overview_df["session"].sort_values().unique().tolist()
+    session_opts = [{"label": ses, "value": ses} for ses in sessions]
+
+    return session_opts, {"display": "block"}
 
 
 @app.callback(
