@@ -327,8 +327,8 @@ def toggle_dataset_name_dialog(
 )
 def process_bagel(contents, filename):
     """
-    From the contents of a correctly-formatted uploaded .csv file, parse and store (1) the pipeline overview
-    data as a dataframe, and (2) pipeline-specific metadata as individual dataframes within a dict.
+    From the contents of a correctly-formatted uploaded .csv file, parse and store (1) the pipeline overview data as a dataframe,
+    and (2) pipeline-specific metadata as individual dataframes within a dict. Dataset summary card is also updated accordingly.
     Returns any errors encountered during input file processing as a user-friendly message.
     """
     if contents is None:
@@ -340,12 +340,14 @@ def process_bagel(contents, filename):
             no_update,
             no_update,
         )
+
     try:
-        (
-            overview_df,
-            pipelines_dict,
-            upload_error,
-        ) = util.parse_csv_contents(contents=contents, filename=filename)
+        bagel, upload_error = util.parse_csv_contents(
+            contents=contents, filename=filename
+        )
+        if upload_error is None:
+            overview_df = util.get_pipelines_overview(bagel=bagel)
+            pipelines_dict = util.extract_pipelines(bagel=bagel)
     except Exception as exc:
         print(exc)  # for debugging
         upload_error = "Something went wrong while processing this file."
