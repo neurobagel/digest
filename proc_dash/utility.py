@@ -131,23 +131,18 @@ def get_pipelines_overview(bagel: pd.DataFrame) -> pd.DataFrame:
     return pipeline_complete_df
 
 
-# TODO: Refactor csv parsing into its own function separate from the overview dataframe generation
 def parse_csv_contents(
     contents, filename
-) -> Tuple[
-    Optional[pd.DataFrame], Optional[list], Optional[dict], Optional[str]
-]:
+) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
     """
+    Returns contents of a bagel.csv as a dataframe, if no issues detected.
+
     Returns
     -------
     pd.DataFrame or None
-        Dataframe containing global statuses of pipelines for each participant-session.
-    list or None
-        List of the unique session ids in the dataset.
-    dict or None
-        Dictionary containing labels and dataframes for each pipeline.
+        Dataframe containing contents of the parsed input tabular file.
     str or None
-        Error raised during parsing of the input, if applicable.
+        Informative error raised during parsing of the input, if applicable.
     """
     content_type, content_string = contents.split(",")
     decoded = base64.b64decode(content_string)
@@ -159,17 +154,13 @@ def parse_csv_contents(
             error_msg = f"The selected .csv is missing the following required metadata columns: {missing_req_cols}."
         elif not are_subjects_same_across_pipelines(bagel):
             error_msg = "The pipelines in bagel.csv do not have the same number of subjects and sessions."
-        else:
-            overview_df = get_pipelines_overview(bagel=bagel)
-            sessions = overview_df["session"].sort_values().unique().tolist()
-            pipelines_dict = extract_pipelines(bagel=bagel)
     else:
         error_msg = "Input file is not a .csv file."
 
     if error_msg is not None:
-        return None, None, None, error_msg
+        return None, error_msg
 
-    return overview_df, sessions, pipelines_dict, None
+    return bagel, None
 
 
 def filter_records(
