@@ -47,18 +47,16 @@
         },
         "pipeline_name": {
             "Label": "pipeline_name",
-            "Description": "Name of a pipeline that was run for the participant, if applicable. Example value: 'freesurfer'",
+            "Description": "Name of a pipeline that was run for the participant. Example value: 'freesurfer'",
             "dtype": "str",
             "IsRequired": true,
-            "MissingValue": "UNAVAILABLE",
             "IsPrefixedColumn": false
         },     
         "pipeline_version": {
             "Label": "pipeline_version",
-            "Description": "Version of pipeline that was run. Must have a value if the value for 'pipeline_name' is not 'UNAVAILABLE'. Example value: '7.3.0'",
+            "Description": "Version of pipeline that was run. Example value: '7.3.0'",
             "dtype": "str",
             "IsRequired": true,
-            "MissingValue": "UNAVAILABLE",
             "IsPrefixedColumn": false
         },
         "pipeline_starttime": {
