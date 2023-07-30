@@ -160,6 +160,7 @@ def parse_csv_contents(
     if error_msg is not None:
         return None, error_msg
 
+    bagel["session"] = bagel["session"].astype(str)
     return bagel, None
 
 
@@ -198,7 +199,7 @@ def filter_records(
                 if all(
                     not sub.query(
                         " and ".join(
-                            [f"session == {session}"] + pipeline_queries
+                            [f"session == '{session}'"] + pipeline_queries
                         )
                     ).empty
                     for session in session_values
