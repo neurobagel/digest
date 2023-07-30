@@ -25,7 +25,7 @@ navbar = dbc.Navbar(
             dbc.Row(
                 dbc.Col(
                     dbc.NavbarBrand(
-                        "Neuroimaging Derivatives Status Dashboard"
+                        "Neuroimaging Dataset Derivatives Status Dashboard"
                     )
                 ),
                 align="center",
@@ -55,9 +55,17 @@ navbar = dbc.Navbar(
 )
 
 upload = dcc.Upload(
-    id="upload-data",
+    id={"type": "upload-data", "index": "imaging", "btn_idx": 0},
     children=dbc.Button(
-        "Drag and Drop or Select .csv File", color="secondary"
+        "Drag and Drop or Select an Imaging .csv File", color="secondary"
+    ),
+    multiple=False,
+)
+
+upload_pheno = dcc.Upload(
+    id={"type": "upload-data", "index": "pheno", "btn_idx": 1},
+    children=dbc.Button(
+        "Drag and Drop or Select a Phenotypic .csv File", color="secondary"
     ),
     multiple=False,
 )
@@ -209,7 +217,7 @@ app.layout = html.Div(
         dcc.Store(id="memory-overview"),
         dcc.Store(id="memory-pipelines"),
         html.Div(
-            children=[upload, sample_data],
+            children=[upload, upload_pheno, sample_data],
             style={"margin-top": "10px", "margin-bottom": "10px"},
             className="hstack gap-3",
         ),
@@ -320,10 +328,8 @@ def toggle_dataset_name_dialog(
         Output("dataset-summary", "children"),
         Output("dataset-summary-card", "style"),
     ],
-    [
-        Input("upload-data", "contents"),
-        State("upload-data", "filename"),
-    ],
+    Input({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "contents"),
+    State({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "filename"),
 )
 def process_bagel(contents, filename):
     """
@@ -331,7 +337,7 @@ def process_bagel(contents, filename):
     and (2) pipeline-specific metadata as individual dataframes within a dict. Dataset summary card is also updated accordingly.
     Returns any errors encountered during input file processing as a user-friendly message.
     """
-    if contents is None:
+    if all(c is None for c in contents):
         return (
             None,
             None,
@@ -340,6 +346,9 @@ def process_bagel(contents, filename):
             no_update,
             no_update,
         )
+
+    contents = ctx.triggered[0]["value"]
+    filename = filename[ctx.triggered_id.btn_idx]
 
     try:
         bagel, upload_error = util.parse_csv_contents(
@@ -369,7 +378,10 @@ def process_bagel(contents, filename):
     dataset_summary = util.construct_summary_str(overview_df)
 
     return (
-        overview_df.to_dict("records"),
+        {
+            "type": ctx.triggered_id.index,
+            "data": overview_df.to_dict("records"),
+        },
         pipelines_dict,
         None,
         "csv",
@@ -391,7 +403,7 @@ def update_session_filter(parsed_data):
     if parsed_data is None:
         return [], {"display": "none"}
 
-    overview_df = pd.DataFrame.from_dict(parsed_data)
+    overview_df = pd.DataFrame.from_dict(parsed_data.get("data"))
     sessions = overview_df["session"].sort_values().unique().tolist()
     session_opts = [{"label": ses, "value": ses} for ses in sessions]
 
@@ -404,16 +416,17 @@ def update_session_filter(parsed_data):
         Output("interactive-datatable", "style_filter_conditional"),
     ],
     Input("memory-pipelines", "data"),
+    State("memory-overview", "data"),
     prevent_initial_call=True,
 )
-def create_pipeline_status_dropdowns(pipelines_dict):
+def create_pipeline_status_dropdowns(pipelines_dict, parsed_data):
     """
     Generates a dropdown filter with status options for each unique pipeline in the input csv,
     and disables the native datatable filter UI for the corresponding columns in the datatable.
     """
     pipeline_dropdowns = []
 
-    if pipelines_dict is not None:
+    if pipelines_dict is not None and parsed_data.get("type") != "pheno":
         for pipeline in pipelines_dict:
             new_pipeline_status_dropdown = dbc.Col(
                 [
@@ -472,7 +485,7 @@ def update_outputs(
     if parsed_data is None:
         return None, None
 
-    data = pd.DataFrame.from_dict(parsed_data)
+    data = pd.DataFrame.from_dict(parsed_data.get("data"))
 
     if session_values or any(v is not None for v in status_values):
         # NOTE: The order in which pipeline-specific dropdowns are added to the layout is determined by the
@@ -531,8 +544,8 @@ def update_matching_rows(columns, virtual_data):
         Output("interactive-datatable", "filter_query"),
         Output("session-dropdown", "value"),
     ],
-    Input("upload-data", "contents"),
-    State("upload-data", "filename"),
+    Input({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "contents"),
+    State({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "filename"),
     prevent_initial_call=True,
 )
 def reset_selections(contents, filename):
@@ -540,8 +553,8 @@ def reset_selections(contents, filename):
     If file contents change (i.e., selected new CSV for upload), reset displayed file name and dropdown filter
     selection values. Reset will occur regardless of whether there is an issue processing the selected file.
     """
-    if ctx.triggered_id == "upload-data":
-        return f"Input file: {filename}", "", ""
+    if ctx.triggered_id.type == "upload-data":
+        return f"Input file: {filename[ctx.triggered_id.btn_idx]}", "", ""
 
     raise PreventUpdate
 
@@ -560,9 +573,9 @@ def generate_overview_status_fig_for_participants(parsed_data):
     grouped by pipeline. Provides overview of the number of participants with each status in a given session,
     per processing pipeline.
     """
-    if parsed_data is not None:
+    if parsed_data is not None and parsed_data.get("type") != "pheno":
         return plot.plot_pipeline_status_by_participants(
-            pd.DataFrame.from_dict(parsed_data)
+            pd.DataFrame.from_dict(parsed_data.get("data"))
         ), {"display": "block"}
 
     return EMPTY_FIGURE_PROPS, {"display": "none"}
@@ -577,16 +590,17 @@ def generate_overview_status_fig_for_participants(parsed_data):
         "interactive-datatable", "data"
     ),  # Input not triggered by datatable frontend filtering
     State("memory-pipelines", "data"),
+    State("memory-overview", "data"),
     prevent_initial_call=True,
 )
-def update_overview_status_fig_for_records(data, pipelines_dict):
+def update_overview_status_fig_for_records(data, pipelines_dict, parsed_data):
     """
     When visible data in the overview datatable is updated (excluding built-in frontend datatable filtering
     but including custom component filtering), generate stacked bar plot of pipeline_complete statuses aggregated
     by pipeline. Counts of statuses in plot thus correspond to unique records (unique participant-session
     combinations).
     """
-    if data is not None:
+    if data is not None and parsed_data.get("type") != "pheno":
         data_df = pd.DataFrame.from_dict(data)
 
         if not data_df.empty:
