@@ -66,7 +66,7 @@ upload_buttons = html.Div(
             multiple=False,
         ),
         dcc.Upload(
-            id={"type": "upload-data", "index": "pheno", "btn_idx": 1},
+            id={"type": "upload-data", "index": "phenotypic", "btn_idx": 1},
             children=dbc.Button(
                 "Drag and Drop or Select a Phenotypic .csv File",
                 color="secondary",
@@ -367,7 +367,7 @@ def process_bagel(contents, filename):
             multiple=False,
         ),
         dcc.Upload(
-            id={"type": "upload-data", "index": "pheno", "btn_idx": 1},
+            id={"type": "upload-data", "index": "phenotypic", "btn_idx": 1},
             children=dbc.Button(
                 "Drag and Drop or Select a Phenotypic .csv File",
                 color="secondary",
@@ -478,7 +478,7 @@ def create_pipeline_status_dropdowns(pipelines_dict, parsed_data):
     """
     pipeline_dropdowns = []
 
-    if pipelines_dict is not None and parsed_data.get("type") != "pheno":
+    if pipelines_dict is not None and parsed_data.get("type") != "phenotypic":
         for pipeline in pipelines_dict:
             new_pipeline_status_dropdown = dbc.Col(
                 [
@@ -625,7 +625,7 @@ def generate_overview_status_fig_for_participants(parsed_data):
     grouped by pipeline. Provides overview of the number of participants with each status in a given session,
     per processing pipeline.
     """
-    if parsed_data is not None and parsed_data.get("type") != "pheno":
+    if parsed_data is not None and parsed_data.get("type") != "phenotypic":
         return plot.plot_pipeline_status_by_participants(
             pd.DataFrame.from_dict(parsed_data.get("data"))
         ), {"display": "block"}
@@ -652,7 +652,7 @@ def update_overview_status_fig_for_records(data, pipelines_dict, parsed_data):
     by pipeline. Counts of statuses in plot thus correspond to unique records (unique participant-session
     combinations).
     """
-    if data is not None and parsed_data.get("type") != "pheno":
+    if data is not None and parsed_data.get("type") != "phenotypic":
         data_df = pd.DataFrame.from_dict(data)
 
         if not data_df.empty:

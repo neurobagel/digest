@@ -12,7 +12,7 @@ BAGEL_CONFIG = {
         "schema_file": "bagel_schema.json",
         "overview_col": "pipeline_complete",
     },
-    "pheno": {
+    "phenotypic": {
         "schema_file": "bagel_schema_pheno.json",
         "overview_col": "assessment_score",
     },
@@ -69,7 +69,7 @@ def get_event_id_columns(
     """Returns names of columns which identify a unique assessment or processing pipeline."""
     if schema == "imaging":
         return ["pipeline_name", "pipeline_version"]
-    elif schema == "pheno":
+    elif schema == "phenotypic":
         return (
             ["assessment_name", "assessment_version"]
             if "assessment_version" in bagel.columns
@@ -166,7 +166,7 @@ def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
             for tup in pipeline_complete_df.columns.to_flat_index()
         ]
 
-    # preserves original order of appearance if schema == "pheno"
+    # preserves original order of appearance if schema == "phenotypic"
     col_order = extract_pipelines(bagel, schema).keys()
 
     pipeline_complete_df = (
