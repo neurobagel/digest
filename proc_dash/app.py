@@ -143,6 +143,8 @@ status_legend_card = dbc.Card(
             ),
         ]
     ),
+    id="processing-status-legend",
+    style={"display": "none"},
 )
 
 overview_table = dash_table.DataTable(
@@ -620,6 +622,7 @@ def reset_selections(filename):
     [
         Output("fig-pipeline-status-all-ses", "figure"),
         Output("fig-pipeline-status-all-ses", "style"),
+        Output("processing-status-legend", "style"),
     ],
     Input("memory-overview", "data"),
     prevent_initial_call=True,
@@ -631,11 +634,15 @@ def generate_overview_status_fig_for_participants(parsed_data):
     per processing pipeline.
     """
     if parsed_data is not None and parsed_data.get("type") != "phenotypic":
-        return plot.plot_pipeline_status_by_participants(
-            pd.DataFrame.from_dict(parsed_data.get("data"))
-        ), {"display": "block"}
+        return (
+            plot.plot_pipeline_status_by_participants(
+                pd.DataFrame.from_dict(parsed_data.get("data"))
+            ),
+            {"display": "block"},
+            {"display": "block"},
+        )
 
-    return EMPTY_FIGURE_PROPS, {"display": "none"}
+    return EMPTY_FIGURE_PROPS, {"display": "none"}, {"display": "none"}
 
 
 @app.callback(
