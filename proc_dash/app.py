@@ -54,20 +54,27 @@ navbar = dbc.Navbar(
     dark=True,
 )
 
-upload = dcc.Upload(
-    id={"type": "upload-data", "index": "imaging", "btn_idx": 0},
-    children=dbc.Button(
-        "Drag and Drop or Select an Imaging .csv File", color="secondary"
-    ),
-    multiple=False,
-)
-
-upload_pheno = dcc.Upload(
-    id={"type": "upload-data", "index": "pheno", "btn_idx": 1},
-    children=dbc.Button(
-        "Drag and Drop or Select a Phenotypic .csv File", color="secondary"
-    ),
-    multiple=False,
+upload_buttons = html.Div(
+    id="upload-buttons",
+    children=[
+        dcc.Upload(
+            id={"type": "upload-data", "index": "imaging", "btn_idx": 0},
+            children=dbc.Button(
+                "Drag and Drop or Select an Imaging .csv File",
+                color="secondary",
+            ),
+            multiple=False,
+        ),
+        dcc.Upload(
+            id={"type": "upload-data", "index": "pheno", "btn_idx": 1},
+            children=dbc.Button(
+                "Drag and Drop or Select a Phenotypic .csv File",
+                color="secondary",
+            ),
+            multiple=False,
+        ),
+    ],
+    className="hstack gap-3",
 )
 
 sample_data = dbc.Button(
@@ -146,7 +153,10 @@ overview_table = dash_table.DataTable(
     filter_action="native",
     page_size=50,
     # fixed_rows={"headers": True},
-    style_table={"height": "300px", "overflowY": "auto"},
+    style_table={"height": "400px", "overflowY": "auto"},
+    # TODO: When table is large, having both vertical + horizontal scrollbars doesn't look great.
+    # Consider removing fixed height and using only page_size + setting overflowX to allow horizontal scroll.
+    # Also, should fix participant_id column, as long as it's first in the dataframe.
     style_cell={
         "fontSize": 13  # accounts for font size inflation by dbc theme
     },
@@ -217,7 +227,7 @@ app.layout = html.Div(
         dcc.Store(id="memory-overview"),
         dcc.Store(id="memory-pipelines"),
         html.Div(
-            children=[upload, upload_pheno, sample_data],
+            children=[upload_buttons, sample_data],
             style={"margin-top": "10px", "margin-bottom": "10px"},
             className="hstack gap-3",
         ),
@@ -235,7 +245,11 @@ app.layout = html.Div(
                                         id="upload-message",  # NOTE: Temporary placeholder, to be removed once error alert elements are implemented
                                     ),
                                     html.Div(
+                                        id="column-count",
+                                    ),
+                                    html.Div(
                                         id="matching-participants",
+                                        style={"margin-left": "15px"},
                                     ),
                                     html.Div(
                                         id="matching-records",
@@ -327,6 +341,8 @@ def toggle_dataset_name_dialog(
         Output("interactive-datatable", "export_format"),
         Output("dataset-summary", "children"),
         Output("dataset-summary-card", "style"),
+        Output("column-count", "children"),
+        Output("upload-buttons", "children"),
     ],
     Input({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "contents"),
     State({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "filename"),
@@ -337,6 +353,29 @@ def process_bagel(contents, filename):
     and (2) pipeline-specific metadata as individual dataframes within a dict. Dataset summary card is also updated accordingly.
     Returns any errors encountered during input file processing as a user-friendly message.
     """
+    # Upload components need to be manually replaced to clear contents,
+    # otherwise previously uploaded imaging/pheno bagels cannot be re-uploaded
+    # (e.g. if a user uploads pheno_bagel.csv, then imaging_bagel.csv, then pheno_bagel.csv again)
+    # see https://github.com/plotly/dash-core-components/issues/816
+    upload_buttons_reset = [
+        dcc.Upload(
+            id={"type": "upload-data", "index": "imaging", "btn_idx": 0},
+            children=dbc.Button(
+                "Drag and Drop or Select an Imaging .csv File",
+                color="secondary",
+            ),
+            multiple=False,
+        ),
+        dcc.Upload(
+            id={"type": "upload-data", "index": "pheno", "btn_idx": 1},
+            children=dbc.Button(
+                "Drag and Drop or Select a Phenotypic .csv File",
+                color="secondary",
+            ),
+            multiple=False,
+        ),
+    ]
+
     if all(c is None for c in contents):
         return (
             None,
@@ -344,6 +383,8 @@ def process_bagel(contents, filename):
             "Upload a CSV file to begin.",
             no_update,
             no_update,
+            no_update,
+            None,
             no_update,
         )
 
@@ -369,6 +410,8 @@ def process_bagel(contents, filename):
             "none",
             None,
             {"display": "none"},
+            None,
+            upload_buttons_reset,
         )
 
     # Change orientation of pipeline dataframe dictionary to enable storage as JSON data
@@ -376,6 +419,7 @@ def process_bagel(contents, filename):
         pipelines_dict[key] = pipelines_dict[key].to_dict("records")
 
     dataset_summary = util.construct_summary_str(overview_df)
+    column_count_str = f"Total number of columns: {len(overview_df.columns)}"
 
     return (
         {
@@ -387,6 +431,8 @@ def process_bagel(contents, filename):
         "csv",
         dataset_summary,
         {"display": "block"},
+        column_count_str,
+        upload_buttons_reset,
     )
 
 
@@ -553,7 +599,7 @@ def reset_selections(contents, filename):
     If file contents change (i.e., selected new CSV for upload), reset displayed file name and dropdown filter
     selection values. Reset will occur regardless of whether there is an issue processing the selected file.
     """
-    if ctx.triggered_id.type == "upload-data":
+    if filename != [None, None]:
         return f"Input file: {filename[ctx.triggered_id.btn_idx]}", "", ""
 
     raise PreventUpdate
