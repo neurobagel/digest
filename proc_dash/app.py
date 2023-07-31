@@ -393,11 +393,17 @@ def process_bagel(contents, filename):
 
     try:
         bagel, upload_error = util.parse_csv_contents(
-            contents=contents, filename=filename
+            contents=contents,
+            filename=filename,
+            schema=ctx.triggered_id.index,
         )
         if upload_error is None:
-            overview_df = util.get_pipelines_overview(bagel=bagel)
-            pipelines_dict = util.extract_pipelines(bagel=bagel)
+            overview_df = util.get_pipelines_overview(
+                bagel=bagel, schema=ctx.triggered_id.index
+            )
+            pipelines_dict = util.extract_pipelines(
+                bagel=bagel, schema=ctx.triggered_id.index
+            )
     except Exception as exc:
         print(exc)  # for debugging
         upload_error = "Something went wrong while processing this file."

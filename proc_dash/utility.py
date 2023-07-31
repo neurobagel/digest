@@ -7,6 +7,16 @@ from typing import Optional, Tuple
 import pandas as pd
 
 SCHEMAS_PATH = Path(__file__).absolute().parents[1] / "schemas"
+BAGEL_CONFIG = {
+    "imaging": {
+        "schema_file": "bagel_schema.json",
+        "overview_col": "pipeline_complete",
+    },
+    "pheno": {
+        "schema_file": "bagel_schema_pheno.json",
+        "overview_col": "assessment_score",
+    },
+}
 PIPE_COMPLETE_STATUS_SHORT_DESC = {
     "SUCCESS": "All stages of pipeline finished successfully (all expected output files present).",
     "FAIL": "At least one stage of the pipeline failed.",
@@ -28,9 +38,9 @@ Total number of unique records (participant-session pairs): {count_unique_record
 Total number of unique sessions: {data["session"].nunique()}"""
 
 
-def get_required_bagel_columns() -> list:
+def get_required_bagel_columns(schema_file: str) -> list:
     """Returns names of required columns from the bagel schema."""
-    with open(SCHEMAS_PATH / "bagel_schema.json", "r") as file:
+    with open(SCHEMAS_PATH / schema_file, "r") as file:
         schema = json.load(file)
 
     required_columns = []
@@ -44,28 +54,56 @@ def get_required_bagel_columns() -> list:
 
 # TODO: When possible values per column have been finalized (waiting on mr_proc),
 # validate that each column only has acceptable values
-def get_missing_required_columns(bagel: pd.DataFrame) -> set:
+def get_missing_required_columns(bagel: pd.DataFrame, schema_file: str) -> set:
     """Identifies any missing required columns in bagel schema."""
-    missing_req_columns = set(get_required_bagel_columns()).difference(
-        bagel.columns
-    )
+    missing_req_columns = set(
+        get_required_bagel_columns(schema_file)
+    ).difference(bagel.columns)
 
     return missing_req_columns
 
 
-def extract_pipelines(bagel: pd.DataFrame) -> dict:
+def get_event_id_columns(
+    bagel: pd.DataFrame, schema: str
+):  # TODO: Add type hint
+    """Returns names of columns which identify a unique assessment or processing pipeline."""
+    if schema == "imaging":
+        return ["pipeline_name", "pipeline_version"]
+    elif schema == "pheno":
+        return (
+            ["assessment_name", "assessment_version"]
+            if "assessment_version" in bagel.columns
+            else "assessment_name"
+        )
+
+
+def extract_pipelines(bagel: pd.DataFrame, schema: str) -> dict:
     """Get data for each unique pipeline in the aggregate input as an individual labelled dataframe."""
     pipelines_dict = {}
 
-    pipelines = bagel.groupby(["pipeline_name", "pipeline_version"])
-    for (name, version), pipeline in pipelines:
-        label = f"{name}-{version}"
-        # per pipeline, rows are sorted in case participants/sessions are out of order
-        pipelines_dict[label] = (
-            pipeline.sort_values(["participant_id", "session"])
-            .drop(["pipeline_name", "pipeline_version"], axis=1)
-            .reset_index(drop=True)
-        )
+    # TODO: Possibly temporary fix - to avoid related assessment columns from being out of order
+    sort = bool(schema == "imaging")
+
+    groupby = get_event_id_columns(bagel, schema)
+    pipelines = bagel.groupby(by=groupby, sort=sort)
+
+    if isinstance(groupby, list):
+        for (name, version), pipeline in pipelines:
+            label = f"{name}-{version}"
+            # per pipeline, rows are sorted in case participants/sessions are out of order
+            pipelines_dict[label] = (
+                pipeline.sort_values(["participant_id", "session"])
+                .drop(groupby, axis=1)
+                .reset_index(drop=True)
+            )
+    else:
+        for name, pipeline in pipelines:
+            # per pipeline, rows are sorted in case participants/sessions are out of order
+            pipelines_dict[name] = (
+                pipeline.sort_values(["participant_id", "session"])
+                .drop(groupby, axis=1)
+                .reset_index(drop=True)
+            )
 
     return pipelines_dict
 
@@ -79,9 +117,11 @@ def get_id_columns(data: pd.DataFrame) -> list:
     )
 
 
-def are_subjects_same_across_pipelines(bagel: pd.DataFrame) -> bool:
+def are_subjects_same_across_pipelines(
+    bagel: pd.DataFrame, schema: str
+) -> bool:
     """Checks if subjects and sessions are the same across pipelines in the input."""
-    pipelines_dict = extract_pipelines(bagel)
+    pipelines_dict = extract_pipelines(bagel, schema)
 
     pipeline_subject_sessions = [
         df.loc[:, get_id_columns(bagel)] for df in pipelines_dict.values()
@@ -108,31 +148,38 @@ def count_unique_records(data: pd.DataFrame) -> int:
     return 0
 
 
-def get_pipelines_overview(bagel: pd.DataFrame) -> pd.DataFrame:
+def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
     """
     Constructs a dataframe containing global statuses of pipelines in bagel.csv
     (based on "pipeline_complete" column) for each participant and session.
     """
     pipeline_complete_df = bagel.pivot(
         index=get_id_columns(bagel),
-        columns=["pipeline_name", "pipeline_version"],
-        values="pipeline_complete",
+        columns=get_event_id_columns(bagel, schema),
+        values=BAGEL_CONFIG[schema]["overview_col"],
     )
-    pipeline_complete_df.columns = [
-        # for neatness, rename pipeline-specific columns from "(name, version)" to "{name}-{version}"
-        "-".join(tup)
-        for tup in pipeline_complete_df.columns.to_flat_index()
-    ]
-    pipeline_complete_df = pipeline_complete_df.reindex(
-        sorted(pipeline_complete_df.columns), axis=1
+
+    if isinstance(get_event_id_columns(bagel, schema), list):
+        pipeline_complete_df.columns = [
+            # for neatness, rename pipeline-specific columns from "(name, version)" to "{name}-{version}"
+            "-".join(tup)
+            for tup in pipeline_complete_df.columns.to_flat_index()
+        ]
+
+    # preserves original order of appearance if schema == "pheno"
+    col_order = extract_pipelines(bagel, schema).keys()
+
+    pipeline_complete_df = (
+        pipeline_complete_df.reindex(col_order, axis=1)
+        .reset_index()
+        .rename_axis(None, axis=1)
     )
-    pipeline_complete_df.reset_index(inplace=True)
 
     return pipeline_complete_df
 
 
 def parse_csv_contents(
-    contents, filename
+    contents, filename, schema
 ) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
     """
     Returns contents of a bagel.csv as a dataframe, if no issues detected.
@@ -150,9 +197,17 @@ def parse_csv_contents(
     error_msg = None
     if ".csv" in filename:
         bagel = pd.read_csv(io.StringIO(decoded.decode("utf-8")))
-        if len(missing_req_cols := get_missing_required_columns(bagel)) > 0:
-            error_msg = f"The selected .csv is missing the following required metadata columns: {missing_req_cols}."
-        elif not are_subjects_same_across_pipelines(bagel):
+
+        if (
+            len(
+                missing_req_cols := get_missing_required_columns(
+                    bagel, BAGEL_CONFIG[schema]["schema_file"]
+                )
+            )
+            > 0
+        ):
+            error_msg = f"The selected .csv is missing the following required {schema} metadata columns: {missing_req_cols}."
+        elif not are_subjects_same_across_pipelines(bagel, schema):
             error_msg = "The pipelines in bagel.csv do not have the same number of subjects and sessions."
     else:
         error_msg = "Input file is not a .csv file."
