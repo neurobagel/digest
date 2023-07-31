@@ -224,6 +224,7 @@ session_filter_form = dbc.Form(
 app.layout = html.Div(
     children=[
         navbar,
+        dcc.Store(id="memory-filename"),
         dcc.Store(id="memory-overview"),
         dcc.Store(id="memory-pipelines"),
         html.Div(
@@ -333,8 +334,10 @@ def toggle_dataset_name_dialog(
     return is_open, None, None
 
 
+# TODO: Refactor dataset summary / column count update into separate callback
 @app.callback(
     [
+        Output("memory-filename", "data"),
         Output("memory-overview", "data"),
         Output("memory-pipelines", "data"),
         Output("upload-message", "children"),
@@ -346,8 +349,9 @@ def toggle_dataset_name_dialog(
     ],
     Input({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "contents"),
     State({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "filename"),
+    State("memory-filename", "data"),
 )
-def process_bagel(contents, filename):
+def process_bagel(contents, filename, memory_filename):
     """
     From the contents of a correctly-formatted uploaded .csv file, parse and store (1) the pipeline overview data as a dataframe,
     and (2) pipeline-specific metadata as individual dataframes within a dict. Dataset summary card is also updated accordingly.
@@ -376,8 +380,9 @@ def process_bagel(contents, filename):
         ),
     ]
 
-    if all(c is None for c in contents):
+    if all(c is None for c in contents) and memory_filename is None:
         return (
+            no_update,
             None,
             None,
             "Upload a CSV file to begin.",
@@ -410,6 +415,7 @@ def process_bagel(contents, filename):
 
     if upload_error is not None:
         return (
+            filename,
             None,
             None,
             f"Error: {upload_error} Please try again.",
@@ -428,6 +434,7 @@ def process_bagel(contents, filename):
     column_count_str = f"Total number of columns: {len(overview_df.columns)}"
 
     return (
+        filename,
         {
             "type": ctx.triggered_id.index,
             "data": overview_df.to_dict("records"),
@@ -596,17 +603,16 @@ def update_matching_rows(columns, virtual_data):
         Output("interactive-datatable", "filter_query"),
         Output("session-dropdown", "value"),
     ],
-    Input({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "contents"),
-    State({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "filename"),
+    Input("memory-filename", "data"),
     prevent_initial_call=True,
 )
-def reset_selections(contents, filename):
+def reset_selections(filename):
     """
     If file contents change (i.e., selected new CSV for upload), reset displayed file name and dropdown filter
     selection values. Reset will occur regardless of whether there is an issue processing the selected file.
     """
-    if filename != [None, None]:
-        return f"Input file: {filename[ctx.triggered_id.btn_idx]}", "", ""
+    if filename is not None:
+        return f"Input file: {filename}", "", ""
 
     raise PreventUpdate
 
