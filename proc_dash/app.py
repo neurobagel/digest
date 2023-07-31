@@ -156,6 +156,7 @@ overview_table = dash_table.DataTable(
     style_table={"height": "400px", "overflowY": "auto"},
     # TODO: When table is large, having both vertical + horizontal scrollbars doesn't look great.
     # Consider removing fixed height and using only page_size + setting overflowX to allow horizontal scroll.
+    # Or, use relative css units here, e.g. vh for fractions of the viewport-height: https://www.w3schools.com/cssref/css_units.php
     # Also, should fix participant_id column, as long as it's first in the dataframe.
     style_cell={
         "fontSize": 13  # accounts for font size inflation by dbc theme
@@ -485,40 +486,38 @@ def create_pipeline_status_dropdowns(pipelines_dict, parsed_data):
     """
     pipeline_dropdowns = []
 
-    if pipelines_dict is not None and parsed_data.get("type") != "phenotypic":
-        for pipeline in pipelines_dict:
-            new_pipeline_status_dropdown = dbc.Col(
-                [
-                    dbc.Label(
-                        pipeline,
-                        className="mb-0",
-                    ),
-                    dcc.Dropdown(
-                        id={
-                            "type": "pipeline-status-dropdown",
-                            "index": pipeline,
-                        },
-                        options=list(
-                            util.PIPE_COMPLETE_STATUS_SHORT_DESC.keys()
-                        ),
-                        placeholder="Select status to filter for",
-                    ),
-                ]
-            )
-            pipeline_dropdowns.append(new_pipeline_status_dropdown)
+    if pipelines_dict is None or parsed_data.get("type") == "phenotypic":
+        return pipeline_dropdowns, None
 
-        # "session" column filter is also disabled due to implemented dropdown filters for session
-        style_disabled_filters = [
-            {
-                "if": {"column_id": c},
-                "pointer-events": "None",
-            }
-            for c in list(pipelines_dict.keys()) + ["session"]
-        ]
+    for pipeline in pipelines_dict:
+        new_pipeline_status_dropdown = dbc.Col(
+            [
+                dbc.Label(
+                    pipeline,
+                    className="mb-0",
+                ),
+                dcc.Dropdown(
+                    id={
+                        "type": "pipeline-status-dropdown",
+                        "index": pipeline,
+                    },
+                    options=list(util.PIPE_COMPLETE_STATUS_SHORT_DESC.keys()),
+                    placeholder="Select status to filter for",
+                ),
+            ]
+        )
+        pipeline_dropdowns.append(new_pipeline_status_dropdown)
 
-        return pipeline_dropdowns, style_disabled_filters
+    # "session" column filter is also disabled due to implemented dropdown filters for session
+    style_disabled_filters = [
+        {
+            "if": {"column_id": c},
+            "pointer-events": "None",
+        }
+        for c in list(pipelines_dict.keys()) + ["session"]
+    ]
 
-    return pipeline_dropdowns, None
+    return pipeline_dropdowns, style_disabled_filters
 
 
 @app.callback(
@@ -658,27 +657,27 @@ def update_overview_status_fig_for_records(data, pipelines_dict, parsed_data):
     by pipeline. Counts of statuses in plot thus correspond to unique records (unique participant-session
     combinations).
     """
-    if data is not None and parsed_data.get("type") != "phenotypic":
-        data_df = pd.DataFrame.from_dict(data)
+    if data is None or parsed_data.get("type") == "phenotypic":
+        return EMPTY_FIGURE_PROPS, {"display": "none"}
 
-        if not data_df.empty:
-            status_counts = (
-                plot.transform_active_data_to_long(data_df)
-                .groupby(["pipeline_name", "pipeline_complete"])
-                .size()
-                .reset_index(name="records")
-            )
-        else:
-            status_counts = plot.populate_empty_records_pipeline_status_plot(
-                pipelines=pipelines_dict.keys(),
-                statuses=util.PIPE_COMPLETE_STATUS_SHORT_DESC.keys(),
-            )
+    data_df = pd.DataFrame.from_dict(data)
 
-        return plot.plot_pipeline_status_by_records(status_counts), {
-            "display": "block"
-        }
+    if not data_df.empty:
+        status_counts = (
+            plot.transform_active_data_to_long(data_df)
+            .groupby(["pipeline_name", "pipeline_complete"])
+            .size()
+            .reset_index(name="records")
+        )
+    else:
+        status_counts = plot.populate_empty_records_pipeline_status_plot(
+            pipelines=pipelines_dict.keys(),
+            statuses=util.PIPE_COMPLETE_STATUS_SHORT_DESC.keys(),
+        )
 
-    return EMPTY_FIGURE_PROPS, {"display": "none"}
+    return plot.plot_pipeline_status_by_records(status_counts), {
+        "display": "block"
+    }
 
 
 if __name__ == "__main__":

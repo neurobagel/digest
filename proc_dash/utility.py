@@ -2,7 +2,7 @@ import base64
 import io
 import json
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import pandas as pd
 
@@ -56,16 +56,12 @@ def get_required_bagel_columns(schema_file: str) -> list:
 # validate that each column only has acceptable values
 def get_missing_required_columns(bagel: pd.DataFrame, schema_file: str) -> set:
     """Identifies any missing required columns in bagel schema."""
-    missing_req_columns = set(
-        get_required_bagel_columns(schema_file)
-    ).difference(bagel.columns)
-
-    return missing_req_columns
+    return set(get_required_bagel_columns(schema_file)).difference(
+        bagel.columns
+    )
 
 
-def get_event_id_columns(
-    bagel: pd.DataFrame, schema: str
-):  # TODO: Add type hint
+def get_event_id_columns(bagel: pd.DataFrame, schema: str) -> Union[list, str]:
     """Returns names of columns which identify a unique assessment or processing pipeline."""
     if schema == "imaging":
         return ["pipeline_name", "pipeline_version"]
