@@ -1,6 +1,7 @@
 import os
 
 import pytest
+
 from dash.testing.application_runners import import_app
 
 
@@ -19,7 +20,8 @@ def test_001_upload_valid_bagel(test_server, bagels_path):
 
     # Find element that contains input link. Utilize the web driver to get the element.
     element = test_server.driver.find_element(
-        "xpath", '//*[@id="upload-data"]/div/input'
+        "xpath",
+        """//*[contains(@id,'"index":"imaging","type":"upload-data"')]/div/input""",
     )
     element.send_keys(os.path.join(bagels_path, "example_bagel.csv"))
     test_server.wait_for_element("#output-data-upload", timeout=4)
@@ -36,12 +38,13 @@ def test_002_upload_invalid_bagel(test_server, bagels_path):
     to reuse the same (function scoped) server instance.
     """
     invalid_input_output = {
-        "example_missing-col_bagel.csv": "missing the following required metadata columns: {'pipeline_starttime'}",
+        "example_missing-col_bagel.csv": "missing the following required imaging metadata columns: {'pipeline_starttime'}",
         "example_mismatch-subs_bagel.csv": "do not have the same number of subjects and sessions",
     }
 
     element = test_server.driver.find_element(
-        "xpath", '//*[@id="upload-data"]/div/input'
+        "xpath",
+        """//*[contains(@id,'"index":"imaging","type":"upload-data"')]/div/input""",
     )
 
     for invalid_bagel, err in invalid_input_output.items():
