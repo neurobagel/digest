@@ -48,7 +48,10 @@ def plot_pipeline_status_by_participants(data: pd.DataFrame):
         color="pipeline_complete",
         text_auto=True,
         facet_col="pipeline_name",
-        category_orders={"pipeline_complete": PIPELINE_STATUS_ORDER},
+        category_orders={
+            "pipeline_complete": PIPELINE_STATUS_ORDER,
+            "session": data["session"].unique(),
+        },
         color_discrete_map=STATUS_COLORS,
         labels={
             "pipeline_name": "Pipeline",

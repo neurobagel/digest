@@ -81,22 +81,23 @@ def extract_pipelines(bagel: pd.DataFrame, schema: str) -> dict:
     sort = bool(schema == "imaging")
 
     groupby = get_event_id_columns(bagel, schema)
+    # groupby auto-sorts keys (columns), but not actual column values
     pipelines = bagel.groupby(by=groupby, sort=sort)
 
     if isinstance(groupby, list):
         for (name, version), pipeline in pipelines:
             label = f"{name}-{version}"
-            # per pipeline, rows are sorted in case participants/sessions are out of order
+            # per pipeline, sort by participant_id (not sorting by session_id here to avoid disrupting chronological order)
             pipelines_dict[label] = (
-                pipeline.sort_values(["participant_id", "session"])
+                pipeline.sort_values(["participant_id"])
                 .drop(groupby, axis=1)
                 .reset_index(drop=True)
             )
     else:
         for name, pipeline in pipelines:
-            # per pipeline, rows are sorted in case participants/sessions are out of order
+            # per pipeline, sort by participant_id (not sorting by session_id here to avoid disrupting chronological order)
             pipelines_dict[name] = (
-                pipeline.sort_values(["participant_id", "session"])
+                pipeline.sort_values(["participant_id"])
                 .drop(groupby, axis=1)
                 .reset_index(drop=True)
             )
@@ -119,9 +120,14 @@ def are_subjects_same_across_pipelines(
     """Checks if subjects and sessions are the same across pipelines in the input."""
     pipelines_dict = extract_pipelines(bagel, schema)
 
-    pipeline_subject_sessions = [
-        df.loc[:, get_id_columns(bagel)] for df in pipelines_dict.values()
-    ]
+    pipeline_subject_sessions = []
+    for df in pipelines_dict.values():
+        # per pipeline, rows are sorted first in case participants/sessions are out of order
+        pipeline_subject_sessions.append(
+            df.sort_values(["participant_id", "session"]).loc[
+                :, get_id_columns(bagel)
+            ]
+        )
 
     return all(
         pipeline.equals(pipeline_subject_sessions[0])
@@ -166,7 +172,11 @@ def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
     col_order = extract_pipelines(bagel, schema).keys()
 
     pipeline_complete_df = (
-        pipeline_complete_df.reindex(col_order, axis=1)
+        # Enforce original order of sessions as they appear in input (pivot automatically sorts them)
+        pipeline_complete_df.reindex(
+            index=bagel["session"].unique(), level="session"
+        )
+        .reindex(col_order, axis=1)  # reorder assessments/pipelines if needed
         .reset_index()
         .rename_axis(None, axis=1)
     )

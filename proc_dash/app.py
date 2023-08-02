@@ -466,7 +466,9 @@ def update_session_filter(parsed_data):
         return [], {"display": "none"}
 
     overview_df = pd.DataFrame.from_dict(parsed_data.get("data"))
-    sessions = overview_df["session"].sort_values().unique().tolist()
+    sessions = (
+        overview_df["session"].unique().tolist()
+    )  # preserve original order of sessions
     session_opts = [{"label": ses, "value": ses} for ses in sessions]
 
     return session_opts, {"display": "block"}
