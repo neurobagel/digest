@@ -228,6 +228,7 @@ app.layout = html.Div(
     children=[
         navbar,
         dcc.Store(id="memory-filename"),
+        dcc.Store(id="memory-sessions"),
         dcc.Store(id="memory-overview"),
         dcc.Store(id="memory-pipelines"),
         html.Div(
@@ -341,6 +342,7 @@ def toggle_dataset_name_dialog(
 @app.callback(
     [
         Output("memory-filename", "data"),
+        Output("memory-sessions", "data"),
         Output("memory-overview", "data"),
         Output("memory-pipelines", "data"),
         Output("upload-message", "children"),
@@ -388,6 +390,7 @@ def process_bagel(contents, filename, memory_filename):
             no_update,
             None,
             None,
+            None,
             "Upload a CSV file to begin.",
             no_update,
             no_update,
@@ -406,6 +409,7 @@ def process_bagel(contents, filename, memory_filename):
             schema=ctx.triggered_id.index,
         )
         if upload_error is None:
+            session_list = bagel["session"].unique().tolist()
             overview_df = util.get_pipelines_overview(
                 bagel=bagel, schema=ctx.triggered_id.index
             )
@@ -419,6 +423,7 @@ def process_bagel(contents, filename, memory_filename):
     if upload_error is not None:
         return (
             filename,
+            None,
             None,
             None,
             f"Error: {upload_error} Please try again.",
@@ -438,6 +443,7 @@ def process_bagel(contents, filename, memory_filename):
 
     return (
         filename,
+        session_list,
         {
             "type": ctx.triggered_id.index,
             "data": overview_df.to_dict("records"),
@@ -458,16 +464,20 @@ def process_bagel(contents, filename, memory_filename):
         Output("session-filter-form", "style"),
     ],
     Input("memory-overview", "data"),
+    State("memory-sessions", "data"),
     prevent_initial_update=True,
 )
-def update_session_filter(parsed_data):
+def update_session_filter(parsed_data, session_list):
     """When uploaded data changes, update the unique session options and visibility of the session filter dropdown."""
     if parsed_data is None:
         return [], {"display": "none"}
 
-    overview_df = pd.DataFrame.from_dict(parsed_data.get("data"))
-    sessions = overview_df["session"].sort_values().unique().tolist()
-    session_opts = [{"label": ses, "value": ses} for ses in sessions]
+    # TODO: Revisit
+    # overview_df = pd.DataFrame.from_dict(parsed_data.get("data"))
+    # sessions = (
+    #     overview_df["session"].unique().tolist()
+    # )
+    session_opts = [{"label": ses, "value": ses} for ses in session_list]
 
     return session_opts, {"display": "block"}
 
@@ -625,9 +635,10 @@ def reset_selections(filename):
         Output("processing-status-legend", "style"),
     ],
     Input("memory-overview", "data"),
+    State("memory-sessions", "data"),
     prevent_initial_call=True,
 )
-def generate_overview_status_fig_for_participants(parsed_data):
+def generate_overview_status_fig_for_participants(parsed_data, session_list):
     """
     If new dataset uploaded, generate stacked bar plot of pipeline_complete statuses per session,
     grouped by pipeline. Provides overview of the number of participants with each status in a given session,
@@ -636,7 +647,7 @@ def generate_overview_status_fig_for_participants(parsed_data):
     if parsed_data is not None and parsed_data.get("type") != "phenotypic":
         return (
             plot.plot_pipeline_status_by_participants(
-                pd.DataFrame.from_dict(parsed_data.get("data"))
+                pd.DataFrame.from_dict(parsed_data.get("data")), session_list
             ),
             {"display": "block"},
             {"display": "block"},

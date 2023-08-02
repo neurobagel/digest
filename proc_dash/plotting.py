@@ -33,7 +33,9 @@ def transform_active_data_to_long(data: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def plot_pipeline_status_by_participants(data: pd.DataFrame):
+def plot_pipeline_status_by_participants(
+    data: pd.DataFrame, session_list: list
+):
     status_counts = (
         transform_active_data_to_long(data)
         .groupby(["pipeline_name", "pipeline_complete", "session"])
@@ -48,7 +50,10 @@ def plot_pipeline_status_by_participants(data: pd.DataFrame):
         color="pipeline_complete",
         text_auto=True,
         facet_col="pipeline_name",
-        category_orders={"pipeline_complete": PIPELINE_STATUS_ORDER},
+        category_orders={
+            "pipeline_complete": PIPELINE_STATUS_ORDER,
+            "session": session_list,
+        },
         color_discrete_map=STATUS_COLORS,
         labels={
             "pipeline_name": "Pipeline",
