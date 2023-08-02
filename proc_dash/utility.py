@@ -81,7 +81,7 @@ def extract_pipelines(bagel: pd.DataFrame, schema: str) -> dict:
     sort = bool(schema == "imaging")
 
     groupby = get_event_id_columns(bagel, schema)
-    # groupby auto-sorts keys (columns), but not actual column values
+    # We only want to sort columns (when needed), not the values inside them. .groupby(sort=True) achieves this
     pipelines = bagel.groupby(by=groupby, sort=sort)
 
     if isinstance(groupby, list):
@@ -124,9 +124,7 @@ def are_subjects_same_across_pipelines(
     for df in pipelines_dict.values():
         # per pipeline, rows are sorted first in case participants/sessions are out of order
         pipeline_subject_sessions.append(
-            df.sort_values(["participant_id", "session"]).loc[
-                :, get_id_columns(bagel)
-            ]
+            df.sort_values(get_id_columns(bagel)).loc[:, get_id_columns(bagel)]
         )
 
     return all(
