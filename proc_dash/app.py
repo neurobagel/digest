@@ -35,16 +35,26 @@ navbar = dbc.Navbar(
             dbc.Row(
                 dbc.Col(
                     dbc.Nav(
-                        dbc.Button(
-                            "View Code on GitHub",
-                            outline=True,
-                            color="light",
-                            href="https://github.com/neurobagel/proc_dash",
-                            # Turn off lowercase transformation for class .button in stylesheet
-                            style={"textTransform": "none"},
-                        ),
-                        className="ml-auto",
-                        navbar=True,
+                        [
+                            dbc.NavLink(
+                                children=[
+                                    html.I(
+                                        className="bi bi-box-arrow-up-right me-1"
+                                    ),
+                                    "Input format",
+                                ],
+                                href="https://github.com/neurobagel/proc_dash/tree/main/schemas",
+                                target="_blank",
+                            ),
+                            dbc.NavLink(
+                                children=[
+                                    html.I(className="bi bi-github me-1"),
+                                    "GitHub",
+                                ],
+                                href="https://github.com/neurobagel/proc_dash",
+                                target="_blank",
+                            ),
+                        ],
                     ),
                 ),
                 align="center",
@@ -62,7 +72,7 @@ upload_buttons = html.Div(
         dcc.Upload(
             id={"type": "upload-data", "index": "imaging", "btn_idx": 0},
             children=dbc.Button(
-                "Drag and Drop or Select an Imaging CSV File",
+                "Drag & Drop or Select an Imaging CSV File",
                 color="secondary",
             ),
             multiple=False,
@@ -70,7 +80,7 @@ upload_buttons = html.Div(
         dcc.Upload(
             id={"type": "upload-data", "index": "phenotypic", "btn_idx": 1},
             children=dbc.Button(
-                "Drag and Drop or Select a Phenotypic CSV File",
+                "Drag & Drop or Select a Phenotypic CSV File",
                 color="secondary",
             ),
             multiple=False,
@@ -393,7 +403,7 @@ def process_bagel(contents, filename, memory_filename):
         dcc.Upload(
             id={"type": "upload-data", "index": "imaging", "btn_idx": 0},
             children=dbc.Button(
-                "Drag and Drop or Select an Imaging CSV File",
+                "Drag & Drop or Select an Imaging CSV File",
                 color="secondary",
             ),
             multiple=False,
@@ -401,7 +411,7 @@ def process_bagel(contents, filename, memory_filename):
         dcc.Upload(
             id={"type": "upload-data", "index": "phenotypic", "btn_idx": 1},
             children=dbc.Button(
-                "Drag and Drop or Select a Phenotypic CSV File",
+                "Drag & Drop or Select a Phenotypic CSV File",
                 color="secondary",
             ),
             multiple=False,
