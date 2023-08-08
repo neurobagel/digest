@@ -15,7 +15,9 @@ from dash.exceptions import PreventUpdate
 EMPTY_FIGURE_PROPS = {"data": [], "layout": {}, "frames": []}
 DEFAULT_NAME = "Dataset"
 
-app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
+app = Dash(
+    __name__, external_stylesheets=[dbc.themes.FLATLY, dbc.icons.BOOTSTRAP]
+)
 server = app.server
 
 # Navbar UI component
@@ -173,6 +175,24 @@ overview_table = dash_table.DataTable(
 # but this results in undesirable effects (e.g., if there is session 1 and session 11,
 # a query for "1" would return both)
 
+filter_form_title = html.Div(
+    [
+        html.H5(
+            children="Advanced filtering options",
+        ),
+        html.I(
+            className="bi bi-question-circle ms-1",
+            id="tooltip-question-target",
+        ),
+        dbc.Tooltip(
+            "Filter for multiple sessions simultaneously. "
+            "Any filter specified directly in the data table will be applied on top of the advanced filtering.",
+            target="tooltip-question-target",
+        ),
+    ],
+    style={"display": "inline-flex"},
+)
+
 session_filter_form = dbc.Form(
     [
         # TODO: Put label and dropdown in same row
@@ -195,7 +215,7 @@ session_filter_form = dbc.Form(
         html.Div(
             [
                 dbc.Label(
-                    "Selection operator:",
+                    "Session selection operator:",
                     html_for="select-operator",
                     className="mb-0",
                 ),
@@ -220,8 +240,6 @@ session_filter_form = dbc.Form(
             className="mb-2",
         ),
     ],
-    id="session-filter-form",
-    style={"display": "none"},
 )
 
 app.layout = html.Div(
@@ -275,17 +293,24 @@ app.layout = html.Div(
         ),
         dbc.Row(
             [
-                dbc.Col(
-                    session_filter_form,
-                    width=3,
+                dbc.Row(filter_form_title),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            session_filter_form,
+                            width=3,
+                        ),
+                        dbc.Col(
+                            dbc.Row(
+                                id="pipeline-dropdown-container",
+                                children=[],
+                            )
+                        ),
+                    ]
                 ),
-                dbc.Col(
-                    dbc.Row(
-                        id="pipeline-dropdown-container",
-                        children=[],
-                    )
-                ),
-            ]
+            ],
+            id="advanced-filter-form",
+            style={"display": "none"},
         ),
         status_legend_card,
         dbc.Row(
@@ -455,7 +480,7 @@ def process_bagel(contents, filename, memory_filename):
 @app.callback(
     [
         Output("session-dropdown", "options"),
-        Output("session-filter-form", "style"),
+        Output("advanced-filter-form", "style"),
     ],
     Input("memory-overview", "data"),
     prevent_initial_update=True,
