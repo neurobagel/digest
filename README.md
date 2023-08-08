@@ -8,7 +8,6 @@ Quickstart: https://dash.neurobagel.org/
 
 ## Preview
 ![alt text](img/ui_overview_table.png?raw=true)
-
 ![alt text](img/ui_overview_plots.png?raw=true)
 
 
