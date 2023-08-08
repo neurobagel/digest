@@ -229,22 +229,30 @@ session_filter_form = dbc.Form(
                     html_for="select-operator",
                     className="mb-0",
                 ),
-                dcc.Dropdown(
+                dcc.RadioItems(
                     id="select-operator",
                     options=[
                         {
-                            "label": "AND",
+                            "label": html.Span("AND", id="and-selector"),
                             "value": "AND",
-                            "title": "All selected sessions are present and match the pipeline-level filter.",
                         },
                         {
-                            "label": "OR",
+                            "label": html.Span("OR", id="or-selector"),
                             "value": "OR",
-                            "title": "Any selected session is present and matches the pipeline-level filter.",
                         },
                     ],
                     value="AND",
-                    clearable=False,
+                    inline=True,
+                    inputClassName="me-1",
+                    labelClassName="me-3",
+                ),
+                dbc.Tooltip(
+                    "All selected sessions are present and match the pipeline-level filter.",
+                    target="and-selector",
+                ),
+                dbc.Tooltip(
+                    "Any selected session is present and matches the pipeline-level filter.",
+                    target="or-selector",
                 ),
             ],
             className="mb-2",
