@@ -7,9 +7,8 @@ This tool ingests tabular processing derivative status files called `bagels`, wh
 Quickstart: https://dash.neurobagel.org/
 
 ## Preview
-![alt text](https://github.com/neurobagel/proc_dash/blob/main/img/ui_overview_table.png?raw=true)
-
-![alt text](https://github.com/neurobagel/proc_dash/blob/main/img/ui_overview_graphs.png?raw=true)
+![alt text](img/ui_overview_table.png?raw=true)
+![alt text](img/ui_overview_plots.png?raw=true)
 
 
 ## Input schema

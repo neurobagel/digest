@@ -15,7 +15,9 @@ from dash.exceptions import PreventUpdate
 EMPTY_FIGURE_PROPS = {"data": [], "layout": {}, "frames": []}
 DEFAULT_NAME = "Dataset"
 
-app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
+app = Dash(
+    __name__, external_stylesheets=[dbc.themes.FLATLY, dbc.icons.BOOTSTRAP]
+)
 server = app.server
 
 # Navbar UI component
@@ -33,16 +35,26 @@ navbar = dbc.Navbar(
             dbc.Row(
                 dbc.Col(
                     dbc.Nav(
-                        dbc.Button(
-                            "View Code on GitHub",
-                            outline=True,
-                            color="light",
-                            href="https://github.com/neurobagel/proc_dash",
-                            # Turn off lowercase transformation for class .button in stylesheet
-                            style={"textTransform": "none"},
-                        ),
-                        className="ml-auto",
-                        navbar=True,
+                        [
+                            dbc.NavLink(
+                                children=[
+                                    html.I(
+                                        className="bi bi-box-arrow-up-right me-1"
+                                    ),
+                                    "Input format",
+                                ],
+                                href="https://github.com/neurobagel/proc_dash/tree/main/schemas",
+                                target="_blank",
+                            ),
+                            dbc.NavLink(
+                                children=[
+                                    html.I(className="bi bi-github me-1"),
+                                    "GitHub",
+                                ],
+                                href="https://github.com/neurobagel/proc_dash",
+                                target="_blank",
+                            ),
+                        ],
                     ),
                 ),
                 align="center",
@@ -60,7 +72,7 @@ upload_buttons = html.Div(
         dcc.Upload(
             id={"type": "upload-data", "index": "imaging", "btn_idx": 0},
             children=dbc.Button(
-                "Drag and Drop or Select an Imaging .csv File",
+                "Drag & Drop or Select an Imaging CSV File",
                 color="secondary",
             ),
             multiple=False,
@@ -68,7 +80,7 @@ upload_buttons = html.Div(
         dcc.Upload(
             id={"type": "upload-data", "index": "phenotypic", "btn_idx": 1},
             children=dbc.Button(
-                "Drag and Drop or Select a Phenotypic .csv File",
+                "Drag & Drop or Select a Phenotypic CSV File",
                 color="secondary",
             ),
             multiple=False,
@@ -173,6 +185,24 @@ overview_table = dash_table.DataTable(
 # but this results in undesirable effects (e.g., if there is session 1 and session 11,
 # a query for "1" would return both)
 
+filter_form_title = html.Div(
+    [
+        html.H5(
+            children="Advanced filtering options",
+        ),
+        html.I(
+            className="bi bi-question-circle ms-1",
+            id="tooltip-question-target",
+        ),
+        dbc.Tooltip(
+            "Filter for multiple sessions simultaneously. "
+            "Any filter specified directly in the data table will be applied on top of the advanced filtering.",
+            target="tooltip-question-target",
+        ),
+    ],
+    style={"display": "inline-flex"},
+)
+
 session_filter_form = dbc.Form(
     [
         # TODO: Put label and dropdown in same row
@@ -195,33 +225,39 @@ session_filter_form = dbc.Form(
         html.Div(
             [
                 dbc.Label(
-                    "Selection operator:",
+                    "Session selection operator:",
                     html_for="select-operator",
                     className="mb-0",
                 ),
-                dcc.Dropdown(
+                dcc.RadioItems(
                     id="select-operator",
                     options=[
                         {
-                            "label": "AND",
+                            "label": html.Span("AND", id="and-selector"),
                             "value": "AND",
-                            "title": "All selected sessions are present and match the pipeline-level filter.",
                         },
                         {
-                            "label": "OR",
+                            "label": html.Span("OR", id="or-selector"),
                             "value": "OR",
-                            "title": "Any selected session is present and matches the pipeline-level filter.",
                         },
                     ],
                     value="AND",
-                    clearable=False,
+                    inline=True,
+                    inputClassName="me-1",
+                    labelClassName="me-3",
+                ),
+                dbc.Tooltip(
+                    "All selected sessions are present and match the pipeline-level filter.",
+                    target="and-selector",
+                ),
+                dbc.Tooltip(
+                    "Any selected session is present and matches the pipeline-level filter.",
+                    target="or-selector",
                 ),
             ],
             className="mb-2",
         ),
     ],
-    id="session-filter-form",
-    style={"display": "none"},
 )
 
 app.layout = html.Div(
@@ -276,17 +312,24 @@ app.layout = html.Div(
         ),
         dbc.Row(
             [
-                dbc.Col(
-                    session_filter_form,
-                    width=3,
+                dbc.Row(filter_form_title),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            session_filter_form,
+                            width=3,
+                        ),
+                        dbc.Col(
+                            dbc.Row(
+                                id="pipeline-dropdown-container",
+                                children=[],
+                            )
+                        ),
+                    ]
                 ),
-                dbc.Col(
-                    dbc.Row(
-                        id="pipeline-dropdown-container",
-                        children=[],
-                    )
-                ),
-            ]
+            ],
+            id="advanced-filter-form",
+            style={"display": "none"},
         ),
         status_legend_card,
         dbc.Row(
@@ -370,7 +413,7 @@ def process_bagel(contents, filename, memory_filename):
         dcc.Upload(
             id={"type": "upload-data", "index": "imaging", "btn_idx": 0},
             children=dbc.Button(
-                "Drag and Drop or Select an Imaging .csv File",
+                "Drag & Drop or Select an Imaging CSV File",
                 color="secondary",
             ),
             multiple=False,
@@ -378,7 +421,7 @@ def process_bagel(contents, filename, memory_filename):
         dcc.Upload(
             id={"type": "upload-data", "index": "phenotypic", "btn_idx": 1},
             children=dbc.Button(
-                "Drag and Drop or Select a Phenotypic .csv File",
+                "Drag & Drop or Select a Phenotypic CSV File",
                 color="secondary",
             ),
             multiple=False,
@@ -461,7 +504,7 @@ def process_bagel(contents, filename, memory_filename):
 @app.callback(
     [
         Output("session-dropdown", "options"),
-        Output("session-filter-form", "style"),
+        Output("advanced-filter-form", "style"),
     ],
     Input("memory-overview", "data"),
     State("memory-sessions", "data"),

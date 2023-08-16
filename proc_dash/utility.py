@@ -210,9 +210,9 @@ def parse_csv_contents(
             )
             > 0
         ):
-            error_msg = f"The selected .csv is missing the following required {schema} metadata columns: {missing_req_cols}."
+            error_msg = f"The selected CSV is missing the following required {schema} metadata columns: {missing_req_cols}."
         elif not are_subjects_same_across_pipelines(bagel, schema):
-            error_msg = "The pipelines in bagel.csv do not have the same number of subjects and sessions."
+            error_msg = "The pipelines in the selected CSV do not have the same number of subjects and sessions."
     else:
         error_msg = "Input file is not a .csv file."
 
