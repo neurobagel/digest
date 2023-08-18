@@ -13,6 +13,8 @@ def test_server(dash_duo):
 
 
 @pytest.mark.parametrize(
+    # NOTE: parameterization necessary here to use a fresh server instance per upload test
+    # (otherwise, time to clear output elements from previous uploads may cause erroneous test passing)
     "valid_bagel,bagel_type,expected_element",
     [
         (
