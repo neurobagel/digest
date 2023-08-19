@@ -12,13 +12,13 @@ Quickstart: https://dash.neurobagel.org/
 
 
 ## Input schema
-Input files to the dashboard contain long format data that must be formatted according to the [bagel schema](https://github.com/neurobagel/proc_dash/tree/main/schemas) (see also the schemas [README](https://github.com/neurobagel/proc_dash/tree/main/schemas#readme) for more info). A single file is expected to correspond to one dataset, but may contain status information for multiple processing pipelines for that dataset.
+Input files to the dashboard contain long format data that must be formatted according to the [bagel schema](/schemas/) (see also the schemas [README](https://github.com/neurobagel/proc_dash/tree/main/schemas#readme) for more info). A single file is expected to correspond to one dataset, but may contain status information for multiple processing pipelines for that dataset.
 
 ### Try it out
-You can view and download correctly formatted, minimal input tabular files from [here](https://github.com/neurobagel/proc_dash/blob/main/example_bagels) to test out dashboard functionality.
+You can view and download correctly formatted, minimal input tabular files from [here](/example_bagels/) to test out dashboard functionality.
 
 ## Steps to generate dashboard inputs (`bagel.csv`)
-While the dashboard accepts any input CSV that is compliant with the [bagel schema](https://github.com/neurobagel/proc_dash/tree/main/schemas), the easiest way to obtain the necessary metadata from your dataset in a dashboard-ready file is to follow the [Nipoppy](https://neurobagel.org/nipoppy/overview/) structure for standardized organization of raw MRI data and processed outputs (data derivatives). `Nipoppy` provides scripts that can leverage this standardized dataset organization to automatically extract info about the raw imaging files and any processing pipelines that have been run on the data, and generate a dashboard-ready `bagel.csv` from the info.
+While the dashboard accepts any input CSV that is compliant with the [bagel schema](/schemas/), the easiest way to obtain the necessary metadata from your dataset in a dashboard-ready file is to follow the [Nipoppy](https://neurobagel.org/nipoppy/overview/) structure for standardized organization of raw MRI data and processed outputs (data derivatives). `Nipoppy` provides scripts that can leverage this standardized dataset organization to automatically extract info about the raw imaging files and any processing pipelines that have been run on the data, and generate a dashboard-ready `bagel.csv` from the info.
 
 Detailed instructions to get started using the `Nipoppy` workflow can be found in their [documentation](https://neurobagel.org/nipoppy/overview/). In brief, generating a `bagel.csv` for your dataset can be as simple as:
 1. Installing `Nipoppy` to generate a dataset directory tree for your dataset (see [Installation](https://neurobagel.org/nipoppy/installation/) section of docs) that you can populate with your existing data
