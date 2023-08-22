@@ -5,12 +5,12 @@ App accepts and parses a user-uploaded bagel.csv file (assumed to be generated b
 
 import dash_bootstrap_components as dbc
 import pandas as pd
-
-import proc_dash.plotting as plot
-import proc_dash.utility as util
 from dash import ALL, Dash, ctx, dash_table, dcc, html, no_update
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
+
+import proc_dash.plotting as plot
+import proc_dash.utility as util
 
 EMPTY_FIGURE_PROPS = {"data": [], "layout": {}, "frames": []}
 DEFAULT_NAME = "Dataset"
@@ -41,7 +41,7 @@ navbar = dbc.Navbar(
                                     html.I(
                                         className="bi bi-box-arrow-up-right me-1"
                                     ),
-                                    "Input format",
+                                    "Input schema",
                                 ],
                                 href="https://github.com/neurobagel/proc_dash/tree/main/schemas",
                                 target="_blank",
@@ -90,9 +90,9 @@ upload_buttons = html.Div(
 )
 
 sample_data = dbc.Button(
-    "View sample input file",
+    "Example input files",
     color="light",
-    href="https://github.com/neurobagel/proc_dash/blob/main/tests/data/example_bagel.csv",
+    href="https://github.com/neurobagel/proc_dash/blob/main/example_bagels",
     target="_blank",  # open external site in new tab
 )
 
