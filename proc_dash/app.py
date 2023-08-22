@@ -5,12 +5,12 @@ App accepts and parses a user-uploaded bagel.csv file (assumed to be generated b
 
 import dash_bootstrap_components as dbc
 import pandas as pd
+from dash import ALL, Dash, ctx, dash_table, dcc, html, no_update
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
 import proc_dash.plotting as plot
 import proc_dash.utility as util
-from dash import ALL, Dash, ctx, dash_table, dcc, html, no_update
 
 EMPTY_FIGURE_PROPS = {"data": [], "layout": {}, "frames": []}
 DEFAULT_NAME = "Dataset"
