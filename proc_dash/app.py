@@ -381,7 +381,6 @@ def toggle_dataset_name_dialog(
     return is_open, None, None
 
 
-# TODO: Refactor dataset summary / column count update into separate callback
 @app.callback(
     [
         Output("memory-filename", "data"),
@@ -390,10 +389,7 @@ def toggle_dataset_name_dialog(
         Output("memory-pipelines", "data"),
         Output("upload-message", "children"),
         Output("interactive-datatable", "export_format"),
-        Output("dataset-summary", "children"),
-        Output("dataset-summary-card", "style"),
-        Output("column-count", "children"),
-        Output("upload-buttons", "children"),
+        Output("upload-buttons", "children"),  # move to its own callback
     ],
     Input({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "contents"),
     State({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "filename"),
@@ -402,7 +398,7 @@ def toggle_dataset_name_dialog(
 def process_bagel(contents, filename, memory_filename):
     """
     From the contents of a correctly-formatted uploaded .csv file, parse and store (1) the pipeline overview data as a dataframe,
-    and (2) pipeline-specific metadata as individual dataframes within a dict. Dataset summary card is also updated accordingly.
+    and (2) pipeline-specific metadata as individual dataframes within a dict.
     Returns any errors encountered during input file processing as a user-friendly message.
     """
     # Upload components need to be manually replaced to clear contents,
@@ -437,9 +433,6 @@ def process_bagel(contents, filename, memory_filename):
             "Upload a CSV file to begin.",
             no_update,
             no_update,
-            no_update,
-            None,
-            no_update,
         )
 
     contents = ctx.triggered[0]["value"]
@@ -471,18 +464,12 @@ def process_bagel(contents, filename, memory_filename):
             None,
             f"Error: {upload_error} Please try again.",
             "none",
-            None,
-            {"display": "none"},
-            None,
             upload_buttons_reset,
         )
 
     # Change orientation of pipeline dataframe dictionary to enable storage as JSON data
     for key in pipelines_dict:
         pipelines_dict[key] = pipelines_dict[key].to_dict("records")
-
-    dataset_summary = util.construct_summary_str(overview_df)
-    column_count_str = f"Total number of columns: {len(overview_df.columns)}"
 
     return (
         filename,
@@ -494,10 +481,29 @@ def process_bagel(contents, filename, memory_filename):
         pipelines_dict,
         None,
         "csv",
-        dataset_summary,
-        {"display": "block"},
-        column_count_str,
         upload_buttons_reset,
+    )
+
+
+@app.callback(
+    [
+        Output("dataset-summary", "children"),
+        Output("dataset-summary-card", "style"),
+        Output("column-count", "children"),
+    ],
+    Input("memory-overview", "data"),
+)
+def display_dataset_metadata(parsed_data):
+    """When successfully uploaded data changes, update summary info of dataset."""
+    if parsed_data is None:
+        return None, {"display": "none"}, None
+
+    overview_df = pd.DataFrame.from_dict(parsed_data.get("data"))
+
+    return (
+        util.construct_summary_str(overview_df),
+        {"display": "block"},
+        f"Total number of columns: {len(overview_df.columns)}",
     )
 
 
