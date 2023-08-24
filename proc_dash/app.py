@@ -66,26 +66,28 @@ navbar = dbc.Navbar(
     dark=True,
 )
 
-upload_buttons = html.Div(
+UPLOAD_BUTTONS = [
+    dcc.Upload(
+        id={"type": "upload-data", "index": "imaging", "btn_idx": 0},
+        children=dbc.Button(
+            "Drag & Drop or Select an Imaging CSV File",
+            color="secondary",
+        ),
+        multiple=False,
+    ),
+    dcc.Upload(
+        id={"type": "upload-data", "index": "phenotypic", "btn_idx": 1},
+        children=dbc.Button(
+            "Drag & Drop or Select a Phenotypic CSV File",
+            color="secondary",
+        ),
+        multiple=False,
+    ),
+]
+
+upload_buttons_container = html.Div(
     id="upload-buttons",
-    children=[
-        dcc.Upload(
-            id={"type": "upload-data", "index": "imaging", "btn_idx": 0},
-            children=dbc.Button(
-                "Drag & Drop or Select an Imaging CSV File",
-                color="secondary",
-            ),
-            multiple=False,
-        ),
-        dcc.Upload(
-            id={"type": "upload-data", "index": "phenotypic", "btn_idx": 1},
-            children=dbc.Button(
-                "Drag & Drop or Select a Phenotypic CSV File",
-                color="secondary",
-            ),
-            multiple=False,
-        ),
-    ],
+    children=UPLOAD_BUTTONS,
     className="hstack gap-3",
 )
 
@@ -161,7 +163,7 @@ status_legend_card = dbc.Card(
 
 overview_table = dash_table.DataTable(
     id="interactive-datatable",
-    data=None,
+    data=None,  # TODO: is this needed?
     sort_action="native",
     sort_mode="multi",
     filter_action="native",
@@ -268,7 +270,7 @@ app.layout = html.Div(
         dcc.Store(id="memory-overview"),
         dcc.Store(id="memory-pipelines"),
         html.Div(
-            children=[upload_buttons, sample_data],
+            children=[upload_buttons_container, sample_data],
             style={"margin-top": "10px", "margin-bottom": "10px"},
             className="hstack gap-3",
         ),
@@ -389,42 +391,17 @@ def toggle_dataset_name_dialog(
         Output("memory-pipelines", "data"),
         Output("upload-message", "children"),
         Output("interactive-datatable", "export_format"),
-        Output("upload-buttons", "children"),  # move to its own callback
     ],
     Input({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "contents"),
     State({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "filename"),
-    State("memory-filename", "data"),
 )
-def process_bagel(contents, filename, memory_filename):
+def process_bagel(contents, filename):
     """
     From the contents of a correctly-formatted uploaded .csv file, parse and store (1) the pipeline overview data as a dataframe,
     and (2) pipeline-specific metadata as individual dataframes within a dict.
     Returns any errors encountered during input file processing as a user-friendly message.
     """
-    # Upload components need to be manually replaced to clear contents,
-    # otherwise previously uploaded imaging/pheno bagels cannot be re-uploaded
-    # (e.g. if a user uploads pheno_bagel.csv, then imaging_bagel.csv, then pheno_bagel.csv again)
-    # see https://github.com/plotly/dash-core-components/issues/816
-    upload_buttons_reset = [
-        dcc.Upload(
-            id={"type": "upload-data", "index": "imaging", "btn_idx": 0},
-            children=dbc.Button(
-                "Drag & Drop or Select an Imaging CSV File",
-                color="secondary",
-            ),
-            multiple=False,
-        ),
-        dcc.Upload(
-            id={"type": "upload-data", "index": "phenotypic", "btn_idx": 1},
-            children=dbc.Button(
-                "Drag & Drop or Select a Phenotypic CSV File",
-                color="secondary",
-            ),
-            multiple=False,
-        ),
-    ]
-
-    if all(c is None for c in contents) and memory_filename is None:
+    if all(c is None for c in contents):
         return (
             no_update,
             None,
@@ -432,15 +409,12 @@ def process_bagel(contents, filename, memory_filename):
             None,
             "Upload a CSV file to begin.",
             no_update,
-            no_update,
         )
 
-    contents = ctx.triggered[0]["value"]
     filename = filename[ctx.triggered_id.btn_idx]
-
     try:
         bagel, upload_error = util.parse_csv_contents(
-            contents=contents,
+            contents=ctx.triggered[0]["value"],
             filename=filename,
             schema=ctx.triggered_id.index,
         )
@@ -464,7 +438,6 @@ def process_bagel(contents, filename, memory_filename):
             None,
             f"Error: {upload_error} Please try again.",
             "none",
-            upload_buttons_reset,
         )
 
     # Change orientation of pipeline dataframe dictionary to enable storage as JSON data
@@ -481,8 +454,24 @@ def process_bagel(contents, filename, memory_filename):
         pipelines_dict,
         None,
         "csv",
-        upload_buttons_reset,
     )
+
+
+@app.callback(
+    Output("upload-buttons", "children"),
+    Input("memory-filename", "data"),
+    prevent_initial_call=True,
+)
+def reset_upload_buttons(memory_filename):
+    """
+    Resets upload buttons to their initial state when any new file is uploaded.
+
+    Upload components need to be manually replaced to clear contents,
+    otherwise previously uploaded imaging/pheno bagels cannot be re-uploaded
+    (e.g. if a user uploads pheno_bagel.csv, then imaging_bagel.csv, then pheno_bagel.csv again)
+    see https://github.com/plotly/dash-core-components/issues/816
+    """
+    return UPLOAD_BUTTONS
 
 
 @app.callback(
@@ -492,6 +481,7 @@ def process_bagel(contents, filename, memory_filename):
         Output("column-count", "children"),
     ],
     Input("memory-overview", "data"),
+    # TODO: add prevent_initial_call=True to prevent callback from being triggered on page load
 )
 def display_dataset_metadata(parsed_data):
     """When successfully uploaded data changes, update summary info of dataset."""
@@ -514,7 +504,7 @@ def display_dataset_metadata(parsed_data):
     ],
     Input("memory-overview", "data"),
     State("memory-sessions", "data"),
-    prevent_initial_update=True,
+    # TODO: add prevent_initial_call=True to prevent callback from being triggered on page load
 )
 def update_session_filter(parsed_data, session_list):
     """When uploaded data changes, update the unique session options and visibility of the session filter dropdown."""
@@ -715,7 +705,7 @@ def generate_overview_status_fig_for_participants(parsed_data, session_list):
     ),  # Input not triggered by datatable frontend filtering
     State("memory-pipelines", "data"),
     State("memory-overview", "data"),
-    prevent_initial_call=True,
+    prevent_initial_call=True,  # TODO: remove, not doing anything since input triggered by another on-load callback
 )
 def update_overview_status_fig_for_records(data, pipelines_dict, parsed_data):
     """
