@@ -5,9 +5,8 @@ App accepts and parses a user-uploaded bagel.csv file (assumed to be generated b
 
 import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import ALL, Dash, ctx, dash_table, dcc, html, no_update
+from dash import ALL, Dash, ctx, dash_table, dcc, html
 from dash.dependencies import Input, Output, State
-from dash.exceptions import PreventUpdate
 
 import proc_dash.plotting as plot
 import proc_dash.utility as util
@@ -163,7 +162,7 @@ status_legend_card = dbc.Card(
 
 overview_table = dash_table.DataTable(
     id="interactive-datatable",
-    data=None,  # TODO: is this needed?
+    data=None,
     sort_action="native",
     sort_mode="multi",
     filter_action="native",
@@ -286,6 +285,7 @@ app.layout = html.Div(
                                 children=[
                                     html.Div(
                                         id="upload-message",  # NOTE: Temporary placeholder, to be removed once error alert elements are implemented
+                                        children="Upload a CSV file to begin.",
                                     ),
                                     html.Div(
                                         id="column-count",
@@ -394,24 +394,15 @@ def toggle_dataset_name_dialog(
     ],
     Input({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "contents"),
     State({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "filename"),
+    prevent_initial_call=True,
 )
-def process_bagel(contents, filename):
+def process_bagel(contents, filenames):
     """
     From the contents of a correctly-formatted uploaded .csv file, parse and store (1) the pipeline overview data as a dataframe,
     and (2) pipeline-specific metadata as individual dataframes within a dict.
     Returns any errors encountered during input file processing as a user-friendly message.
     """
-    if all(c is None for c in contents):
-        return (
-            no_update,
-            None,
-            None,
-            None,
-            "Upload a CSV file to begin.",
-            no_update,
-        )
-
-    filename = filename[ctx.triggered_id.btn_idx]
+    filename = filenames[ctx.triggered_id.btn_idx]
     try:
         bagel, upload_error = util.parse_csv_contents(
             contents=ctx.triggered[0]["value"],
@@ -481,7 +472,7 @@ def reset_upload_buttons(memory_filename):
         Output("column-count", "children"),
     ],
     Input("memory-overview", "data"),
-    # TODO: add prevent_initial_call=True to prevent callback from being triggered on page load
+    prevent_initial_call=True,
 )
 def display_dataset_metadata(parsed_data):
     """When successfully uploaded data changes, update summary info of dataset."""
@@ -504,18 +495,13 @@ def display_dataset_metadata(parsed_data):
     ],
     Input("memory-overview", "data"),
     State("memory-sessions", "data"),
-    # TODO: add prevent_initial_call=True to prevent callback from being triggered on page load
+    prevent_initial_call=True,
 )
 def update_session_filter(parsed_data, session_list):
     """When uploaded data changes, update the unique session options and visibility of the session filter dropdown."""
     if parsed_data is None:
         return [], {"display": "none"}
 
-    # TODO: Revisit
-    # overview_df = pd.DataFrame.from_dict(parsed_data.get("data"))
-    # sessions = (
-    #     overview_df["session"].unique().tolist()
-    # )
     session_opts = [{"label": ses, "value": ses} for ses in session_list]
 
     return session_opts, {"display": "block"}
@@ -661,10 +647,7 @@ def reset_selections(filename):
     If file contents change (i.e., selected new CSV for upload), reset displayed file name and dropdown filter
     selection values. Reset will occur regardless of whether there is an issue processing the selected file.
     """
-    if filename is not None:
-        return f"Input file: {filename}", "", ""
-
-    raise PreventUpdate
+    return f"Input file: {filename}", "", ""
 
 
 @app.callback(
@@ -705,7 +688,7 @@ def generate_overview_status_fig_for_participants(parsed_data, session_list):
     ),  # Input not triggered by datatable frontend filtering
     State("memory-pipelines", "data"),
     State("memory-overview", "data"),
-    prevent_initial_call=True,  # TODO: remove, not doing anything since input triggered by another on-load callback
+    prevent_initial_call=True,
 )
 def update_overview_status_fig_for_records(data, pipelines_dict, parsed_data):
     """
