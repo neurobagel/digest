@@ -315,7 +315,7 @@ def session_filter_form():
     )
 
 
-def serve_layout():
+def construct_layout():
     """Generates the overall dashboard layout."""
     return html.Div(
         children=[

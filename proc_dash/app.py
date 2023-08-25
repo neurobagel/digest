@@ -10,7 +10,11 @@ from dash.dependencies import Input, Output, State
 
 import proc_dash.plotting as plot
 import proc_dash.utility as util
-from proc_dash.layout import DEFAULT_DATASET_NAME, serve_layout, upload_buttons
+from proc_dash.layout import (
+    DEFAULT_DATASET_NAME,
+    construct_layout,
+    upload_buttons,
+)
 
 EMPTY_FIGURE_PROPS = {"data": [], "layout": {}, "frames": []}
 
@@ -19,7 +23,7 @@ app = Dash(
 )
 server = app.server
 
-app.layout = serve_layout()
+app.layout = construct_layout()
 
 
 @app.callback(
