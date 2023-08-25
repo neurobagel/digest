@@ -30,7 +30,7 @@ def test_001_upload_valid_bagel(
 ):
     """
     Smoke test (e2e) for uploading a valid bagel input.
-    Tests that an expected element for the uploaded data type is displayed after upload.
+    Tests that the input filename and an expected element for the uploaded data type is displayed after upload.
     """
     # Find element that contains input link. Utilize the web driver to get the element.
     upload = test_server.driver.find_element(
@@ -39,6 +39,9 @@ def test_001_upload_valid_bagel(
     )
 
     upload.send_keys(os.path.realpath(os.path.join(bagels_path, valid_bagel)))
+    test_server.wait_for_contains_text(
+        "#input-filename", valid_bagel, timeout=4
+    )
     test_server.wait_for_style_to_equal(
         expected_element, "display", "block", timeout=4
     )
@@ -51,7 +54,7 @@ def test_001_upload_valid_bagel(
 
 def test_002_upload_invalid_imaging_bagel(test_server, bagels_path):
     """
-    Given an invalid uploaded imaging bagel, displays an informative error message.
+    Given an invalid uploaded imaging bagel, displays an informative error message and updates the filename.
     NOTE: Different example files are iterated over instead of parameterized for efficiency,
     to reuse the same (function scoped) server instance.
     """
@@ -69,6 +72,9 @@ def test_002_upload_invalid_imaging_bagel(test_server, bagels_path):
     for invalid_bagel, err in invalid_input_output.items():
         upload.send_keys(
             os.path.realpath(os.path.join(bagels_path, invalid_bagel))
+        )
+        test_server.wait_for_contains_text(
+            "#input-filename", invalid_bagel, timeout=4
         )
         test_server.wait_for_contains_text(
             "#output-data-upload", err, timeout=4
