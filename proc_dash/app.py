@@ -98,7 +98,7 @@ def process_bagel(contents, filenames):
             None,
             None,
             None,
-            f"Error: {upload_error} Please try again.",
+            f"Error: {upload_error}",
             "none",
         )
 
