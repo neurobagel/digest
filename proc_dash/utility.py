@@ -195,11 +195,10 @@ def parse_csv_contents(
     str or None
         Informative error raised during parsing of the input, if applicable.
     """
-    content_type, content_string = contents.split(",")
-    decoded = base64.b64decode(content_string)
-
     error_msg = None
     if filename.endswith(".csv"):
+        content_type, content_string = contents.split(",")
+        decoded = base64.b64decode(content_string)
         bagel = pd.read_csv(io.StringIO(decoded.decode("utf-8")))
 
         if (
