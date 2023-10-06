@@ -199,7 +199,7 @@ def parse_csv_contents(
     decoded = base64.b64decode(content_string)
 
     error_msg = None
-    if ".csv" in filename:
+    if filename.endswith(".csv"):
         bagel = pd.read_csv(io.StringIO(decoded.decode("utf-8")))
 
         if (
