@@ -315,6 +315,26 @@ def session_filter_form():
     )
 
 
+def phenotypic_plotting_form():
+    """Generates the dropdown for selecting a phenotypic column to plot."""
+    return html.Div(
+        [
+            dbc.Label(
+                "Select a column to plot:",
+                html_for="phenotypic-column-plotting-dropdown",
+                className="mb-0",
+            ),
+            dcc.Dropdown(
+                id="phenotypic-column-plotting-dropdown",
+                options=[],
+            ),
+        ],
+        # className="mb-2",  # Add margin to keep dropdowns spaced apart
+        id="phenotypic-plotting-form",
+        style={"display": "none"},
+    )
+
+
 def construct_layout():
     """Generates the overall dashboard layout."""
     return html.Div(
@@ -369,6 +389,9 @@ def construct_layout():
                 ],
                 id="advanced-filter-form",
                 style={"display": "none"},
+            ),
+            dbc.Row(
+                phenotypic_plotting_form(),
             ),
             status_legend_card(),
             dbc.Row(
