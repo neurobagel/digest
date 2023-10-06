@@ -7,6 +7,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import ALL, Dash, ctx, dcc
 from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
 
 import proc_dash.plotting as plot
 import proc_dash.utility as util
@@ -389,6 +390,31 @@ def update_overview_status_fig_for_records(data, pipelines_dict, parsed_data):
     return plot.plot_pipeline_status_by_records(status_counts), {
         "display": "block"
     }
+
+
+@app.callback(
+    [
+        Output("phenotypic-plotting-form", "style"),
+        Output("phenotypic-column-plotting-dropdown", "options"),
+    ],
+    Input("memory-overview", "data"),
+    prevent_initial_call=True,
+)
+def display_phenotypic_column_dropdown(parsed_data):
+    """When phenotypic data is uploaded, display and populate dropdown to select column to plot."""
+    if parsed_data is not None and parsed_data.get("type") == "phenotypic":
+        column_options = []
+        for column in pd.DataFrame.from_dict(parsed_data.get("data")):
+            # exclude unique participant identifier columns from visualization
+            if column not in [
+                "participant_id",
+                "bids_id",
+            ]:  # TODO: Consider storing these column names in a constant
+                column_options.append({"label": column, "value": column})
+
+        return {"display": "block"}, column_options
+
+    raise PreventUpdate
 
 
 if __name__ == "__main__":
