@@ -244,10 +244,8 @@ def advanced_filter_form_title():
             ),
             dbc.Tooltip(
                 dcc.Markdown(
-                    """
-                Filter for multiple sessions simultaneously.
-                Note that any data filters selected here will always be applied *before* any column filter(s) specified directly in the data table.
-                """
+                    "Filter for multiple sessions simultaneously. "
+                    "Note that any data filters selected here will always be applied *before* any column filter(s) specified directly in the data table."
                 ),
                 target="tooltip-question-target",
             ),
