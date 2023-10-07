@@ -329,7 +329,6 @@ def phenotypic_plotting_form():
                 options=[],
             ),
         ],
-        # className="mb-2",  # Add margin to keep dropdowns spaced apart
         id="phenotypic-plotting-form",
         style={"display": "none"},
     )
@@ -409,6 +408,12 @@ def construct_layout():
                         )
                     ),
                 ],
+            ),
+            dbc.Row(
+                dcc.Graph(
+                    id="fig-column-histogram",
+                    style={"display": "none"},
+                )
             ),
         ],
         style={"padding": "10px 10px 10px 10px"},
