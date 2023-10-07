@@ -417,5 +417,24 @@ def display_phenotypic_column_dropdown(parsed_data):
     raise PreventUpdate
 
 
+@app.callback(
+    [
+        Output("fig-column-histogram", "figure"),
+        Output("fig-column-histogram", "style"),
+    ],
+    Input("phenotypic-column-plotting-dropdown", "value"),
+    State("memory-overview", "data"),
+    prevent_initial_call=True,
+)
+def plot_phenotypic_column(selected_column: str, parsed_data: dict):
+    """When a column is selected from the dropdown, generate a histogram of the column values."""
+    if selected_column is not None:
+        return plot.plot_phenotypic_column_histogram(
+            pd.DataFrame.from_dict(parsed_data.get("data")), selected_column
+        ), {"display": "block"}
+
+    raise PreventUpdate
+
+
 if __name__ == "__main__":
     app.run_server(debug=True)

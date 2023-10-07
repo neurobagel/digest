@@ -13,6 +13,8 @@ STATUS_COLORS = {
 }
 # TODO: could use util.PIPE_COMPLETE_STATUS_SHORT_DESC to define below variable instead
 PIPELINE_STATUS_ORDER = ["SUCCESS", "FAIL", "UNAVAILABLE"]
+
+# Define margins and title position for plots
 LAYOUTS = {
     "margin": {"l": 30, "r": 30, "t": 60, "b": 30},  # margins of chart
     "title": {  # figure title position properties
@@ -107,3 +109,15 @@ def populate_empty_records_pipeline_status_plot(
     status_counts["records"] = 0
 
     return status_counts
+
+
+def plot_phenotypic_column_histogram(data: pd.DataFrame, column: str):
+    """Returns a histogram of the values of the given column across all records."""
+    fig = px.histogram(
+        data,
+        x=column,
+        title=f'Values of "{column}" across all records',
+    )
+    fig.update_layout(margin=LAYOUTS["margin"], title=LAYOUTS["title"])
+
+    return fig
