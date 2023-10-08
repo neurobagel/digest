@@ -24,6 +24,23 @@ PIPE_COMPLETE_STATUS_SHORT_DESC = {
 }
 
 
+def reset_column_dtypes(data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Infer more appropriate dtypes for dataframe columns by re-reading in the data.
+    This is useful when columns have been formed from splitting a column with mixed dtypes.
+    """
+    # See https://stackoverflow.com/a/38213524
+    stream = io.StringIO()
+    data.to_csv(stream, index=False)
+    stream.seek(0)
+    data_retyped = pd.read_csv(stream)
+    stream.close()
+
+    # Just in case, convert session labels back to strings (will avoid sessions being undesirably treated as continuous data in e.g., plots)
+    data_retyped["session"] = data_retyped["session"].astype(str)
+    return data_retyped
+
+
 def construct_legend_str(status_desc: dict) -> str:
     """From a dictionary, constructs a legend-style string with multiple lines in the format of key: value."""
     return "\n".join(
@@ -101,6 +118,7 @@ def extract_pipelines(bagel: pd.DataFrame, schema: str) -> dict:
                 .drop(groupby, axis=1)
                 .reset_index(drop=True)
             )
+            pipelines_dict[name] = reset_column_dtypes(pipelines_dict[name])
 
     return pipelines_dict
 
@@ -179,7 +197,7 @@ def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
         .rename_axis(None, axis=1)
     )
 
-    return pipeline_complete_df
+    return reset_column_dtypes(pipeline_complete_df)
 
 
 def parse_csv_contents(
