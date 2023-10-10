@@ -180,10 +180,7 @@ def update_session_filter(parsed_data, session_list):
 
 
 @app.callback(
-    [
-        Output("pipeline-dropdown-container", "children"),
-        Output("interactive-datatable", "style_filter_conditional"),
-    ],
+    Output("pipeline-dropdown-container", "children"),
     Input("memory-pipelines", "data"),
     State("memory-overview", "data"),
     prevent_initial_call=True,
@@ -217,16 +214,7 @@ def create_pipeline_status_dropdowns(pipelines_dict, parsed_data):
         )
         pipeline_dropdowns.append(new_pipeline_status_dropdown)
 
-    # "session" column filter is also disabled due to implemented dropdown filters for session
-    style_disabled_filters = [
-        {
-            "if": {"column_id": c},
-            "pointer-events": "None",
-        }
-        for c in list(pipelines_dict.keys()) + ["session"]
-    ]
-
-    return pipeline_dropdowns, style_disabled_filters
+    return pipeline_dropdowns
 
 
 @app.callback(
