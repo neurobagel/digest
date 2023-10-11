@@ -114,11 +114,11 @@ def populate_empty_records_pipeline_status_plot(
 
 
 def plot_phenotypic_column_histogram(data: pd.DataFrame, column: str):
-    """Returns a histogram of the values of the given column across all records."""
+    """Returns a histogram of the values of the given column across records in the active datatable."""
     fig = px.histogram(
         data,
         x=column,
-        title=f'Values of "{column}" across all records',
+        title=f'Values of "{column}" across records matching filter (default: all)',
         color_discrete_sequence=[HISTO_COLOR],
     )
     fig.update_layout(margin=LAYOUTS["margin"], title=LAYOUTS["title"])
