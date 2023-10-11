@@ -390,6 +390,8 @@ def construct_layout():
                 ],
                 id="advanced-filter-form",
                 style={"display": "none"},
+                # Visually separate advanced filtering form from plots
+                className="mb-3",
             ),
             dbc.Row(
                 phenotypic_plotting_form(),
