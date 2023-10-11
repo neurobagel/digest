@@ -5,12 +5,14 @@ import plotly.express as px
 
 import proc_dash.utility as util
 
-STATUS_CMAP = px.colors.qualitative.Bold
+CMAP = px.colors.qualitative.Bold
 STATUS_COLORS = {
-    "SUCCESS": STATUS_CMAP[5],
-    "FAIL": STATUS_CMAP[9],
-    "UNAVAILABLE": STATUS_CMAP[10],
+    "SUCCESS": CMAP[5],
+    "FAIL": CMAP[9],
+    "UNAVAILABLE": CMAP[10],
 }
+HISTO_COLOR = CMAP[0]
+
 # TODO: could use util.PIPE_COMPLETE_STATUS_SHORT_DESC to define below variable instead
 PIPELINE_STATUS_ORDER = ["SUCCESS", "FAIL", "UNAVAILABLE"]
 
@@ -117,6 +119,7 @@ def plot_phenotypic_column_histogram(data: pd.DataFrame, column: str):
         data,
         x=column,
         title=f'Values of "{column}" across all records',
+        color_discrete_sequence=[HISTO_COLOR],
     )
     fig.update_layout(margin=LAYOUTS["margin"], title=LAYOUTS["title"])
 
