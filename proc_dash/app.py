@@ -192,10 +192,7 @@ def create_pipeline_status_dropdowns(pipelines_dict, parsed_data):
     pipeline_dropdowns = []
 
     if pipelines_dict is None or parsed_data.get("type") == "phenotypic":
-        return (
-            pipeline_dropdowns,
-            None,
-        )  # TODO: Remove None - this is leftover from when another style component was updated
+        return pipeline_dropdowns
 
     for pipeline in pipelines_dict:
         new_pipeline_status_dropdown = dbc.Col(
