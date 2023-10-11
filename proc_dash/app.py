@@ -418,14 +418,23 @@ def display_phenotypic_column_dropdown(parsed_data):
     prevent_initial_call=True,
 )
 def plot_phenotypic_column(
-    selected_column: str, virtual_data: dict, parsed_data: dict
+    selected_column: str, virtual_data: list, parsed_data: dict
 ):
     """When a column is selected from the dropdown, generate a histogram of the column values."""
     if selected_column is None or parsed_data.get("type") != "phenotypic":
         return EMPTY_FIGURE_PROPS, {"display": "none"}
 
+    # If no data is visible in the datatable (i.e., zero matches), create an empty version of the dataframe (preserving the column names)
+    # to supply to the plotting function. This ensures that an empty plot will be generated with the correct x-axis title.
+    if not virtual_data:
+        data_to_plot = pd.DataFrame.from_dict(parsed_data.get("data")).iloc[
+            0:0
+        ]
+    else:
+        data_to_plot = virtual_data
+
     return plot.plot_phenotypic_column_histogram(
-        pd.DataFrame.from_dict(virtual_data), selected_column
+        pd.DataFrame.from_dict(data_to_plot), selected_column
     ), {"display": "block"}
 
 
