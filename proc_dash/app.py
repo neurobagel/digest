@@ -7,7 +7,6 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import ALL, Dash, ctx, dcc
 from dash.dependencies import Input, Output, State
-from dash.exceptions import PreventUpdate
 
 import proc_dash.plotting as plot
 import proc_dash.utility as util
@@ -193,7 +192,10 @@ def create_pipeline_status_dropdowns(pipelines_dict, parsed_data):
     pipeline_dropdowns = []
 
     if pipelines_dict is None or parsed_data.get("type") == "phenotypic":
-        return pipeline_dropdowns, None
+        return (
+            pipeline_dropdowns,
+            None,
+        )  # TODO: Remove None - this is leftover from when another style component was updated
 
     for pipeline in pipelines_dict:
         new_pipeline_status_dropdown = dbc.Col(
@@ -298,6 +300,7 @@ def update_matching_rows(columns, virtual_data):
         Output("input-filename", "children"),
         Output("interactive-datatable", "filter_query"),
         Output("session-dropdown", "value"),
+        Output("phenotypic-column-plotting-dropdown", "value"),
     ],
     Input("memory-filename", "data"),
     prevent_initial_call=True,
@@ -307,7 +310,7 @@ def reset_selections(filename):
     If file contents change (i.e., selected new CSV for upload), reset displayed file name and dropdown filter
     selection values. Reset will occur regardless of whether there is an issue processing the selected file.
     """
-    return f"Input file: {filename}", "", ""
+    return f"Input file: {filename}", "", "", None
 
 
 @app.callback(
@@ -390,19 +393,19 @@ def update_overview_status_fig_for_records(data, pipelines_dict, parsed_data):
 )
 def display_phenotypic_column_dropdown(parsed_data):
     """When phenotypic data is uploaded, display and populate dropdown to select column to plot."""
-    if parsed_data is not None and parsed_data.get("type") == "phenotypic":
-        column_options = []
-        for column in pd.DataFrame.from_dict(parsed_data.get("data")):
-            # exclude unique participant identifier columns from visualization
-            if column not in [
-                "participant_id",
-                "bids_id",
-            ]:  # TODO: Consider storing these column names in a constant
-                column_options.append({"label": column, "value": column})
+    if parsed_data is None or parsed_data.get("type") != "phenotypic":
+        return {"display": "none"}, []
 
-        return {"display": "block"}, column_options
+    column_options = []
+    for column in pd.DataFrame.from_dict(parsed_data.get("data")):
+        # exclude unique participant identifier columns from visualization
+        if column not in [
+            "participant_id",
+            "bids_id",
+        ]:  # TODO: Consider storing these column names in a constant
+            column_options.append({"label": column, "value": column})
 
-    raise PreventUpdate
+    return {"display": "block"}, column_options
 
 
 @app.callback(
@@ -416,12 +419,12 @@ def display_phenotypic_column_dropdown(parsed_data):
 )
 def plot_phenotypic_column(selected_column: str, parsed_data: dict):
     """When a column is selected from the dropdown, generate a histogram of the column values."""
-    if selected_column is not None:
-        return plot.plot_phenotypic_column_histogram(
-            pd.DataFrame.from_dict(parsed_data.get("data")), selected_column
-        ), {"display": "block"}
+    if selected_column is None or parsed_data.get("type") != "phenotypic":
+        return EMPTY_FIGURE_PROPS, {"display": "none"}
 
-    raise PreventUpdate
+    return plot.plot_phenotypic_column_histogram(
+        pd.DataFrame.from_dict(parsed_data.get("data")), selected_column
+    ), {"display": "block"}
 
 
 if __name__ == "__main__":
