@@ -127,7 +127,9 @@ def test_003_upload_invalid_phenotypic_bagel(test_server, bagels_path):
     ), "browser console should contain no error"
 
 
-def test_004_phenotypic_column_plotting(test_server, bagels_path):
+def test_004_phenotypic_col_plotting_selection_generates_histogram(
+    test_server, bagels_path
+):
     """
     Given a valid phenotypic bagel, displays a dropdown that, in response to a column option selection,
     displays a histogram for that column without errors.
