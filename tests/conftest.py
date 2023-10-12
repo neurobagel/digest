@@ -10,7 +10,7 @@ def pytest_setup_options():
     (Ref: https://community.plotly.com/t/dash-integration-testing-with-selenium-and-github-actions/43602)
     """
     options = Options()
-    # See https://www.selenium.dev/blog/2023/headless-is-going-away/#after for the renewed headless mode
+    # See https://www.selenium.dev/blog/2023/headless-is-going-away/#after for the renewed headless mode. This is needed for the window rescaling to work properly.
     options.add_argument("--headless=new")
     options.add_argument("--disable-gpu")
 
