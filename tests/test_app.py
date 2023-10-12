@@ -43,7 +43,7 @@ def test_001_upload_valid_bagel(
 ):
     """
     Smoke test (e2e) for uploading a valid bagel input.
-    Tests that the input filename and an expected element for the uploaded data type is displayed after upload.
+    Tests that the input filename and expected/unexpected elements for the uploaded data type is displayed/not after upload.
     """
     # Find element that contains input link. Utilize the web driver to get the element.
     upload = test_server.driver.find_element(
