@@ -19,9 +19,12 @@ PIPELINE_STATUS_ORDER = ["SUCCESS", "FAIL", "UNAVAILABLE"]
 # Define margins and title position for plots
 LAYOUTS = {
     "margin": {"l": 30, "r": 30, "t": 60, "b": 30},  # margins of chart
-    "title": {  # figure title position properties
+    "title": {  # figure title position properties, see https://plotly.com/python/reference/layout/#layout-title
         "yref": "container",
+        "xref": "paper",
+        "x": 0.5,
         "y": 1,
+        "xanchor": "center",
         "yanchor": "top",
         "pad": {"t": 20},
     },
@@ -115,12 +118,20 @@ def populate_empty_records_pipeline_status_plot(
 
 def plot_phenotypic_column_histogram(data: pd.DataFrame, column: str):
     """Returns a histogram of the values of the given column across records in the active datatable."""
+    title_fsize = 18
     fig = px.histogram(
         data,
         x=column,
-        title=f'Values of "{column}" across records matching filter (default: all)',
         color_discrete_sequence=[HISTO_COLOR],
+        text_auto=True,
     )
-    fig.update_layout(margin=LAYOUTS["margin"], title=LAYOUTS["title"])
-
+    fig.update_layout(
+        margin=LAYOUTS["margin"],
+        title={
+            "text": f'Count distribution of "{column}" across records matching filter (default: all)',
+            "font": {"size": title_fsize},
+            **LAYOUTS["title"],
+        },
+        bargap=0.1,
+    )
     return fig
