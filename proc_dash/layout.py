@@ -321,6 +321,7 @@ def phenotypic_plotting_form():
     """Generates the dropdown for selecting a phenotypic column to plot."""
     return html.Div(
         [
+            html.H5(children="Visualize column data"),
             dbc.Label(
                 "Select a column to plot:",
                 html_for="phenotypic-column-plotting-dropdown",
@@ -372,29 +373,32 @@ def construct_layout():
             ),
             dbc.Row(
                 [
-                    dbc.Row(advanced_filter_form_title()),
-                    dbc.Row(
+                    dbc.Col(
                         [
-                            dbc.Col(
-                                session_filter_form(),
-                                width=3,
+                            dbc.Row(advanced_filter_form_title()),
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        session_filter_form(),
+                                        width=4,
+                                    ),
+                                    dbc.Col(
+                                        dbc.Row(
+                                            id="pipeline-dropdown-container",
+                                            children=[],
+                                        ),
+                                    ),
+                                ]
                             ),
-                            dbc.Col(
-                                dbc.Row(
-                                    id="pipeline-dropdown-container",
-                                    children=[],
-                                )
-                            ),
-                        ]
+                        ],
+                        id="advanced-filter-form",
+                        style={"display": "none"},
                     ),
-                ],
-                id="advanced-filter-form",
-                style={"display": "none"},
-                # Visually separate advanced filtering form from plots
-                className="mb-3",
-            ),
-            dbc.Row(
-                phenotypic_plotting_form(),
+                    dbc.Col(
+                        phenotypic_plotting_form(),
+                        width=3,
+                    ),
+                ]
             ),
             status_legend_card(),
             dbc.Row(
@@ -414,9 +418,12 @@ def construct_layout():
                 ],
             ),
             dbc.Row(
-                dcc.Graph(
-                    id="fig-column-histogram",
-                    style={"display": "none"},
+                dbc.Col(
+                    dcc.Graph(
+                        id="fig-column-histogram",
+                        style={"display": "none"},
+                    ),
+                    width=8,
                 )
             ),
         ],
