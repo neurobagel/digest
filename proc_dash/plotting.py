@@ -1,4 +1,5 @@
 from itertools import product
+from textwrap import wrap
 
 import pandas as pd
 import plotly.express as px
@@ -38,6 +39,20 @@ def transform_active_data_to_long(data: pd.DataFrame) -> pd.DataFrame:
         var_name="pipeline_name",
         value_name="pipeline_complete",
     )
+
+
+def wrap_df_column_values(
+    df: pd.DataFrame, column: str, width: int
+) -> pd.DataFrame:
+    """Wraps string values of a column which are longer than the specified character length."""
+    if df[column].dtype == "object":
+        df[column] = df[column].map(
+            lambda value: "<br>".join(
+                wrap(text=value, width=width, break_long_words=False)
+            ),
+            na_action="ignore",
+        )
+    return df
 
 
 def plot_pipeline_status_by_participants(
@@ -120,7 +135,7 @@ def plot_phenotypic_column_histogram(data: pd.DataFrame, column: str):
     """Returns a histogram of the values of the given column across records in the active datatable."""
     title_fsize = 18
     fig = px.histogram(
-        data,
+        wrap_df_column_values(df=data, column=column, width=30),
         x=column,
         color_discrete_sequence=[HISTO_COLOR],
         text_auto=True,
