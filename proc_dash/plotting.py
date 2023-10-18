@@ -3,6 +3,7 @@ from textwrap import wrap
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
 import proc_dash.utility as util
 
@@ -57,7 +58,7 @@ def wrap_df_column_values(
 
 def plot_pipeline_status_by_participants(
     data: pd.DataFrame, session_list: list
-):
+) -> go.Figure:
     status_counts = (
         transform_active_data_to_long(data)
         .groupby(["pipeline_name", "pipeline_complete", "session"])
@@ -92,7 +93,7 @@ def plot_pipeline_status_by_participants(
     return fig
 
 
-def plot_pipeline_status_by_records(status_counts: pd.DataFrame):
+def plot_pipeline_status_by_records(status_counts: pd.DataFrame) -> go.Figure:
     fig = px.bar(
         status_counts,
         x="pipeline_name",
@@ -131,7 +132,9 @@ def populate_empty_records_pipeline_status_plot(
     return status_counts
 
 
-def plot_phenotypic_column_histogram(data: pd.DataFrame, column: str):
+def plot_phenotypic_column_histogram(
+    data: pd.DataFrame, column: str
+) -> go.Figure:
     """Returns a histogram of the values of the given column across records in the active datatable."""
     title_fsize = 18
     fig = px.histogram(
