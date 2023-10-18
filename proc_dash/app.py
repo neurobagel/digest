@@ -192,7 +192,7 @@ def create_pipeline_status_dropdowns(pipelines_dict, parsed_data):
     pipeline_dropdowns = []
 
     if pipelines_dict is None or parsed_data.get("type") == "phenotypic":
-        return pipeline_dropdowns, None
+        return pipeline_dropdowns
 
     for pipeline in pipelines_dict:
         new_pipeline_status_dropdown = dbc.Col(
@@ -207,7 +207,7 @@ def create_pipeline_status_dropdowns(pipelines_dict, parsed_data):
                         "index": pipeline,
                     },
                     options=list(util.PIPE_COMPLETE_STATUS_SHORT_DESC.keys()),
-                    placeholder="Select status to filter for",
+                    placeholder="Filter by status...",
                 ),
             ]
         )
@@ -297,6 +297,7 @@ def update_matching_rows(columns, virtual_data):
         Output("input-filename", "children"),
         Output("interactive-datatable", "filter_query"),
         Output("session-dropdown", "value"),
+        Output("phenotypic-column-plotting-dropdown", "value"),
     ],
     Input("memory-filename", "data"),
     prevent_initial_call=True,
@@ -306,7 +307,7 @@ def reset_selections(filename):
     If file contents change (i.e., selected new CSV for upload), reset displayed file name and dropdown filter
     selection values. Reset will occur regardless of whether there is an issue processing the selected file.
     """
-    return f"Input file: {filename}", "", ""
+    return f"Input file: {filename}", "", "", None
 
 
 @app.callback(
@@ -377,6 +378,64 @@ def update_overview_status_fig_for_records(data, pipelines_dict, parsed_data):
     return plot.plot_pipeline_status_by_records(status_counts), {
         "display": "block"
     }
+
+
+@app.callback(
+    [
+        Output("phenotypic-plotting-form", "style"),
+        Output("phenotypic-column-plotting-dropdown", "options"),
+    ],
+    Input("memory-overview", "data"),
+    prevent_initial_call=True,
+)
+def display_phenotypic_column_dropdown(parsed_data):
+    """When phenotypic data is uploaded, display and populate dropdown to select column to plot."""
+    if parsed_data is None or parsed_data.get("type") != "phenotypic":
+        return {"display": "none"}, []
+
+    column_options = []
+    for column in pd.DataFrame.from_dict(parsed_data.get("data")):
+        # exclude unique participant identifier columns from visualization
+        if column not in [
+            "participant_id",
+            "bids_id",
+        ]:  # TODO: Consider storing these column names in a constant
+            column_options.append({"label": column, "value": column})
+
+    return {"display": "block"}, column_options
+
+
+@app.callback(
+    [
+        Output("fig-column-histogram", "figure"),
+        Output("fig-column-histogram", "style"),
+    ],
+    [
+        Input("phenotypic-column-plotting-dropdown", "value"),
+        Input("interactive-datatable", "derived_virtual_data"),
+    ],
+    State("memory-overview", "data"),
+    prevent_initial_call=True,
+)
+def plot_phenotypic_column(
+    selected_column: str, virtual_data: list, parsed_data: dict
+):
+    """When a column is selected from the dropdown, generate a histogram of the column values."""
+    if selected_column is None or parsed_data.get("type") != "phenotypic":
+        return EMPTY_FIGURE_PROPS, {"display": "none"}
+
+    # If no data is visible in the datatable (i.e., zero matches), create an empty version of the dataframe (preserving the column names)
+    # to supply to the plotting function. This ensures that an empty plot will be generated with the correct x-axis title.
+    if not virtual_data:
+        data_to_plot = pd.DataFrame.from_dict(parsed_data.get("data")).iloc[
+            0:0
+        ]
+    else:
+        data_to_plot = virtual_data
+
+    return plot.plot_phenotypic_column_histogram(
+        pd.DataFrame.from_dict(data_to_plot), selected_column
+    ), {"display": "block"}
 
 
 if __name__ == "__main__":

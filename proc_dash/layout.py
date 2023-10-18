@@ -244,8 +244,8 @@ def advanced_filter_form_title():
             ),
             dbc.Tooltip(
                 dcc.Markdown(
-                    "Filter for multiple sessions simultaneously. "
-                    "Note that any data filters selected here will always be applied *before* any column filter(s) specified directly in the data table."
+                    "Filter based on multiple sessions simultaneously. "
+                    "Note that any data filters selected here will always be applied *before* any column filters specified directly in the data table."
                 ),
                 target="tooltip-question-target",
             ),
@@ -267,7 +267,7 @@ def session_filter_form():
                 id="session-dropdown",
                 options=[],
                 multi=True,
-                placeholder="Select one or more available sessions to filter by",
+                placeholder="Select one or more sessions...",
             ),
         ],
         className="mb-2",  # Add margin to keep dropdowns spaced apart
@@ -298,11 +298,11 @@ def session_filter_form():
                 labelClassName="me-3",
             ),
             dbc.Tooltip(
-                "All selected sessions are present and match the pipeline-level filter.",
+                "All selected sessions are present for the subject and (for imaging data only) match the pipeline status filters.",
                 target="and-selector",
             ),
             dbc.Tooltip(
-                "Any selected session is present and matches the pipeline-level filter.",
+                "Any selected session is present for the subject and (for imaging data only) matches the pipeline status filters.",
                 target="or-selector",
             ),
         ],
@@ -314,6 +314,26 @@ def session_filter_form():
             session_options,
             selection_operator,
         ],
+    )
+
+
+def phenotypic_plotting_form():
+    """Generates the dropdown for selecting a phenotypic column to plot."""
+    return html.Div(
+        [
+            html.H5(children="Visualize column data"),
+            dbc.Label(
+                "Select a column to plot:",
+                html_for="phenotypic-column-plotting-dropdown",
+                className="mb-0",
+            ),
+            dcc.Dropdown(
+                id="phenotypic-column-plotting-dropdown",
+                options=[],
+            ),
+        ],
+        id="phenotypic-plotting-form",
+        style={"display": "none"},
     )
 
 
@@ -353,24 +373,32 @@ def construct_layout():
             ),
             dbc.Row(
                 [
-                    dbc.Row(advanced_filter_form_title()),
-                    dbc.Row(
+                    dbc.Col(
                         [
-                            dbc.Col(
-                                session_filter_form(),
-                                width=3,
+                            dbc.Row(advanced_filter_form_title()),
+                            dbc.Row(
+                                [
+                                    dbc.Col(
+                                        session_filter_form(),
+                                        width=4,
+                                    ),
+                                    dbc.Col(
+                                        dbc.Row(
+                                            id="pipeline-dropdown-container",
+                                            children=[],
+                                        ),
+                                    ),
+                                ]
                             ),
-                            dbc.Col(
-                                dbc.Row(
-                                    id="pipeline-dropdown-container",
-                                    children=[],
-                                )
-                            ),
-                        ]
+                        ],
+                        id="advanced-filter-form",
+                        style={"display": "none"},
                     ),
-                ],
-                id="advanced-filter-form",
-                style={"display": "none"},
+                    dbc.Col(
+                        phenotypic_plotting_form(),
+                        width=3,
+                    ),
+                ]
             ),
             status_legend_card(),
             dbc.Row(
@@ -388,6 +416,15 @@ def construct_layout():
                         )
                     ),
                 ],
+            ),
+            dbc.Row(
+                dbc.Col(
+                    dcc.Graph(
+                        id="fig-column-histogram",
+                        style={"display": "none"},
+                    ),
+                    width=8,
+                )
             ),
         ],
         style={"padding": "10px 10px 10px 10px"},
