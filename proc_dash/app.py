@@ -207,7 +207,7 @@ def create_pipeline_status_dropdowns(pipelines_dict, parsed_data):
                         "index": pipeline,
                     },
                     options=list(util.PIPE_COMPLETE_STATUS_SHORT_DESC.keys()),
-                    placeholder="Select status to filter for",
+                    placeholder="Filter by status...",
                 ),
             ]
         )

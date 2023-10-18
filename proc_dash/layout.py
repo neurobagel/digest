@@ -244,8 +244,8 @@ def advanced_filter_form_title():
             ),
             dbc.Tooltip(
                 dcc.Markdown(
-                    "Filter for multiple sessions simultaneously. "
-                    "Note that any data filters selected here will always be applied *before* any column filter(s) specified directly in the data table."
+                    "Filter based on multiple sessions simultaneously. "
+                    "Note that any data filters selected here will always be applied *before* any column filters specified directly in the data table."
                 ),
                 target="tooltip-question-target",
             ),
@@ -267,7 +267,7 @@ def session_filter_form():
                 id="session-dropdown",
                 options=[],
                 multi=True,
-                placeholder="Select one or more available sessions to filter by",
+                placeholder="Select one or more sessions...",
             ),
         ],
         className="mb-2",  # Add margin to keep dropdowns spaced apart
@@ -298,11 +298,11 @@ def session_filter_form():
                 labelClassName="me-3",
             ),
             dbc.Tooltip(
-                "All selected sessions are present and match the pipeline-level filter.",
+                "All selected sessions are present for the subject and (for imaging data only) match the pipeline status filters.",
                 target="and-selector",
             ),
             dbc.Tooltip(
-                "Any selected session is present and matches the pipeline-level filter.",
+                "Any selected session is present for the subject and (for imaging data only) matches the pipeline status filters.",
                 target="or-selector",
             ),
         ],
