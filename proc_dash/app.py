@@ -5,7 +5,7 @@ App accepts and parses a user-uploaded bagel.csv file (assumed to be generated b
 
 import dash_bootstrap_components as dbc
 import pandas as pd
-from dash import ALL, Dash, ctx, dcc
+from dash import ALL, Dash, ctx, dcc, html
 from dash.dependencies import Input, Output, State
 
 import proc_dash.plotting as plot
@@ -436,6 +436,42 @@ def plot_phenotypic_column(
     return plot.plot_phenotypic_column_histogram(
         pd.DataFrame.from_dict(data_to_plot), selected_column
     ), {"display": "block"}
+
+
+@app.callback(
+    [
+        Output("column-summary-title", "children"),
+        Output("column-summary", "children"),
+        Output("column-summary-card", "style"),
+    ],
+    [
+        Input("phenotypic-column-plotting-dropdown", "value"),
+        Input("interactive-datatable", "derived_virtual_data"),
+    ],
+    State("memory-overview", "data"),
+    prevent_initial_call=True,
+)
+def generate_column_summary(
+    selected_column: str, virtual_data: list, parsed_data: dict
+):
+    """When a column is selected from the dropdown, generate summary stats of the column values."""
+    if selected_column is None or parsed_data.get("type") != "phenotypic":
+        return None, None, {"display": "none"}
+
+    # If no data is visible in the datatable (i.e., zero matches), return an informative message
+    if not virtual_data:
+        return (
+            selected_column,
+            html.I("No matching records available to compute value summary"),
+            {"display": "block"},
+        )
+
+    column_data = pd.DataFrame.from_dict(virtual_data)[selected_column]
+    return (
+        selected_column,
+        util.construct_column_summary_str(column_data),
+        {"display": "block"},
+    )
 
 
 if __name__ == "__main__":
