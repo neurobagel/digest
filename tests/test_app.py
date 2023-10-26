@@ -128,12 +128,12 @@ def test_003_upload_invalid_phenotypic_bagel(test_server, bagels_path):
     ), "browser console should contain no error"
 
 
-def test_004_phenotypic_col_plotting_selection_generates_histogram(
+def test_004_phenotypic_col_selection_generates_visualization(
     test_server, bagels_path
 ):
     """
     Given a valid phenotypic bagel, displays a dropdown that, in response to a column option selection,
-    displays a histogram for that column without errors.
+    displays a histogram and a value summary card for that column without errors.
     """
     upload = test_server.driver.find_element(
         "xpath",
@@ -159,8 +159,14 @@ def test_004_phenotypic_col_plotting_selection_generates_histogram(
     test_server.wait_for_style_to_equal(
         "#fig-column-histogram", "display", "block", timeout=4
     )
+    test_server.wait_for_style_to_equal(
+        "#column-summary-card", "display", "block", timeout=4
+    )
     assert (
         "moca_total" in test_server.find_element("#fig-column-histogram").text
+    )
+    assert (
+        "moca_total" in test_server.find_element("#column-summary-card").text
     )
 
     assert (

@@ -337,6 +337,27 @@ def phenotypic_plotting_form():
     )
 
 
+def column_summary_card():
+    """Generates the card that displays summary statistics about a selected phenotypic column."""
+    return dbc.Card(
+        dbc.CardBody(
+            [
+                html.H5(
+                    id="column-summary-title",
+                    className="card-title",
+                ),
+                html.P(
+                    id="column-summary",
+                    style={"whiteSpace": "pre-wrap"},  # preserve newlines
+                    className="card-text",
+                ),
+            ],
+        ),
+        id="column-summary-card",
+        style={"display": "none"},
+    )
+
+
 def construct_layout():
     """Generates the overall dashboard layout."""
     return html.Div(
@@ -418,13 +439,17 @@ def construct_layout():
                 ],
             ),
             dbc.Row(
-                dbc.Col(
-                    dcc.Graph(
-                        id="fig-column-histogram",
-                        style={"display": "none"},
+                [
+                    dbc.Col(
+                        dcc.Graph(
+                            id="fig-column-histogram",
+                            style={"display": "none"},
+                        ),
+                        width=8,
                     ),
-                    width=8,
-                )
+                    dbc.Col(column_summary_card()),
+                ],
+                align="center",
             ),
         ],
         style={"padding": "10px 10px 10px 10px"},
