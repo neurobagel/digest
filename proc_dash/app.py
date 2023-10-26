@@ -469,7 +469,7 @@ def generate_column_summary(
     column_data = pd.DataFrame.from_dict(virtual_data)[selected_column]
     return (
         selected_column,
-        util.construct_column_summary_str(column_data),
+        util.generate_column_summary_str(column_data),
         {"display": "block"},
     )
 

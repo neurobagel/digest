@@ -42,42 +42,6 @@ def reset_column_dtypes(data: pd.DataFrame) -> pd.DataFrame:
     return data_retyped
 
 
-def construct_column_summary_str(column: pd.Series) -> str:
-    """
-    Compute and return summary statistics for a given column as a string.
-    For a numerical column, these include the non-missing and missing value counts, mean, standard deviation, min, median, and max.
-    For a categorical column, these include the non-missing and missing value counts, number of unique values, and most common value.
-    """
-    if np.issubdtype(column.dtype, np.number):
-        # Define summary stats we don't care about. We ignore 'count' because we recompute this value as a ratio below.
-        ignore_stats = ["25%", "75%", "count"]
-        summary_stats = (
-            column.describe().rename({"50%": "median"}).map("{:.2f}".format)
-        )
-    else:
-        ignore_stats = ["freq", "count"]
-        summary_stats = column.describe().rename(
-            {"unique": "unique values", "top": "most common value"}
-        )
-
-    summary_stats = pd.concat(
-        [
-            pd.Series(
-                {
-                    "non-missing values": f"{column.notna().sum()}/{len(column)}",
-                    "missing values": f"{column.isna().sum()}/{len(column)}",
-                }
-            ),
-            summary_stats,
-        ],
-    )
-
-    summary_str = summary_stats.drop(labels=ignore_stats).to_csv(
-        header=False, sep="\t"
-    )
-    return summary_str.replace("\t", ": ")
-
-
 def construct_legend_str(status_desc: dict) -> str:
     """From a dictionary, constructs a legend-style string with multiple lines in the format of key: value."""
     return "\n".join(
@@ -328,3 +292,39 @@ def filter_records(
     data = data.query(query)
 
     return data
+
+
+def generate_column_summary_str(column: pd.Series) -> str:
+    """
+    Compute and return summary statistics for a given column as a string.
+    For a numerical column, these include the non-missing and missing value counts, mean, standard deviation, min, median, and max.
+    For a categorical column, these include the non-missing and missing value counts, number of unique values, and most common value.
+    """
+    if np.issubdtype(column.dtype, np.number):
+        # Define summary stats we don't care about. We ignore 'count' because we recompute this value as a ratio below.
+        ignore_stats = ["25%", "75%", "count"]
+        summary_stats = (
+            column.describe().rename({"50%": "median"}).map("{:.2f}".format)
+        )
+    else:
+        ignore_stats = ["freq", "count"]
+        summary_stats = column.describe().rename(
+            {"unique": "unique values", "top": "most common value"}
+        )
+
+    summary_stats = pd.concat(
+        [
+            pd.Series(
+                {
+                    "non-missing values": f"{column.notna().sum()}/{len(column)}",
+                    "missing values": f"{column.isna().sum()}/{len(column)}",
+                }
+            ),
+            summary_stats,
+        ],
+    )
+
+    summary_str = summary_stats.drop(labels=ignore_stats).to_csv(
+        header=False, sep="\t"
+    )
+    return summary_str.replace("\t", ": ")
