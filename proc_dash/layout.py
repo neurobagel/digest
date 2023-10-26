@@ -348,7 +348,7 @@ def column_summary_card():
                 ),
                 html.P(
                     id="column-summary",
-                    style={"whiteSpace": "pre"},
+                    style={"whiteSpace": "pre-wrap"},  # preserve newlines
                     className="card-text",
                 ),
             ],
@@ -447,9 +447,9 @@ def construct_layout():
                         ),
                         width=8,
                     ),
-                    # TODO: Try and center card within column vertically
                     dbc.Col(column_summary_card()),
                 ],
+                align="center",
             ),
         ],
         style={"padding": "10px 10px 10px 10px"},
