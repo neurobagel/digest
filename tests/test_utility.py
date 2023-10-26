@@ -58,3 +58,40 @@ def test_wrap_df_column_values():
     wrapped_df = plot.wrap_df_column_values(df, "updrs_p3_hy", 30)
     assert all("<br>" in value for value in wrapped_df["updrs_p3_hy"][1:3])
     assert "<br>" not in wrapped_df["updrs_p3_hy"][0]
+
+
+@pytest.mark.parametrize(
+    "column,nonmissing,missing,stats",
+    [
+        ("group", "3/3", "0/3", ["unique values", "most common value"]),
+        ("moca_total", "2/3", "1/3", ["mean", "std", "min", "median", "max"]),
+        (
+            "moca_total_status",
+            "3/3",
+            "0/3",
+            ["mean", "std", "min", "median", "max"],
+        ),
+    ],
+)
+def test_generate_column_summary_str(column, nonmissing, missing, stats):
+    """Test that generate_column_summary_str() returns a string with the correct summary statistics for a given column."""
+    pheno_overview_df = pd.DataFrame(
+        {
+            "participant_id": ["sub-1", "sub-2", "sub-3"],
+            "session": [
+                "1",
+                "1",
+                "1",
+            ],  # the session column is always converted to strings for the dashboard
+            "group": ["PD", "PD", "PD"],
+            "moca_total": [21, 24, np.nan],
+            "moca_total_status": [True, True, False],
+        }
+    )
+    column_summary = util.generate_column_summary_str(
+        pheno_overview_df[column]
+    )
+
+    assert [stat in column_summary for stat in stats]
+    assert f"non-missing values: {nonmissing}" in column_summary
+    assert f"missing values: {missing}" in column_summary
