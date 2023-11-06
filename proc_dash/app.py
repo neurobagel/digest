@@ -474,5 +474,18 @@ def generate_column_summary(
     )
 
 
+@app.callback(
+    Output("session-toggle-switch", "style"),
+    Input("phenotypic-column-plotting-dropdown", "value"),
+    prevent_initial_call=True,
+)
+def display_session_switch(selected_column: str):
+    """When a column is selected from the dropdown, display switch to enable/disable stratifying the plot by session."""
+    if selected_column is None:
+        return {"display": "none"}
+
+    return {"display": "block"}
+
+
 if __name__ == "__main__":
     app.run_server(debug=True)
