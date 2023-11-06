@@ -13,7 +13,7 @@ STATUS_COLORS = {
     "FAIL": CMAP[9],
     "UNAVAILABLE": CMAP[10],
 }
-HISTO_COLOR = CMAP[0]
+CMAP_PHENO = px.colors.qualitative.Vivid
 
 # TODO: could use util.PIPE_COMPLETE_STATUS_SHORT_DESC to define below variable instead
 PIPELINE_STATUS_ORDER = ["SUCCESS", "FAIL", "UNAVAILABLE"]
@@ -133,16 +133,18 @@ def populate_empty_records_pipeline_status_plot(
 
 
 def plot_phenotypic_column_histogram(
-    data: pd.DataFrame, column: str
+    data: pd.DataFrame, column: str, color: str = None
 ) -> go.Figure:
     """Returns a histogram of the values of the given column across records in the active datatable."""
     title_fsize = 18
     fig = px.histogram(
         wrap_df_column_values(df=data, column=column, width=30),
         x=column,
-        color_discrete_sequence=[HISTO_COLOR],
-        text_auto=True,
+        color=color,
+        color_discrete_sequence=CMAP_PHENO,
+        marginal="box",
     )
+    fig.update_traces(boxmean=True, notched=False, selector={"type": "box"})
     fig.update_layout(
         margin=LAYOUTS["margin"],
         title={
@@ -151,5 +153,6 @@ def plot_phenotypic_column_histogram(
             **LAYOUTS["title"],
         },
         bargap=0.1,
+        barmode="relative",
     )
     return fig

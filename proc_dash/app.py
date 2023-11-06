@@ -413,12 +413,16 @@ def display_phenotypic_column_dropdown(parsed_data):
     [
         Input("phenotypic-column-plotting-dropdown", "value"),
         Input("interactive-datatable", "derived_virtual_data"),
+        Input("session-toggle-switch", "value"),
     ],
     State("memory-overview", "data"),
     prevent_initial_call=True,
 )
 def plot_phenotypic_column(
-    selected_column: str, virtual_data: list, parsed_data: dict
+    selected_column: str,
+    virtual_data: list,
+    session_switch_value: bool,
+    parsed_data: dict,
 ):
     """When a column is selected from the dropdown, generate a histogram of the column values."""
     if selected_column is None or parsed_data.get("type") != "phenotypic":
@@ -433,8 +437,13 @@ def plot_phenotypic_column(
     else:
         data_to_plot = virtual_data
 
+    if session_switch_value:
+        color = "session"
+    else:
+        color = None
+
     return plot.plot_phenotypic_column_histogram(
-        pd.DataFrame.from_dict(data_to_plot), selected_column
+        pd.DataFrame.from_dict(data_to_plot), selected_column, color
     ), {"display": "block"}
 
 
