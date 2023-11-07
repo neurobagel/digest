@@ -298,16 +298,17 @@ def update_matching_rows(columns, virtual_data):
         Output("interactive-datatable", "filter_query"),
         Output("session-dropdown", "value"),
         Output("phenotypic-column-plotting-dropdown", "value"),
+        Output("session-toggle-switch", "value"),
     ],
     Input("memory-filename", "data"),
     prevent_initial_call=True,
 )
 def reset_selections(filename):
     """
-    If file contents change (i.e., selected new CSV for upload), reset displayed file name and dropdown filter
-    selection values. Reset will occur regardless of whether there is an issue processing the selected file.
+    If file contents change (i.e., selected new CSV for upload), reset displayed file name and selection values related to data filtering or plotting.
+    Reset will occur regardless of whether there is an issue processing the selected file.
     """
-    return f"Input file: {filename}", "", "", None
+    return f"Input file: {filename}", "", "", None, False
 
 
 @app.callback(
