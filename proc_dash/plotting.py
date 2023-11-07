@@ -1,6 +1,7 @@
 from itertools import product
 from textwrap import wrap
 
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -135,14 +136,23 @@ def populate_empty_records_pipeline_status_plot(
 def plot_phenotypic_column_histogram(
     data: pd.DataFrame, column: str, color: str = None
 ) -> go.Figure:
-    """Returns a histogram of the values of the given column across records in the active datatable."""
+    """
+    Returns a histogram of the values of the given column across records in the active datatable.
+    If the column data are continuous, a box plot of the distribution is also plotted as a subplot.
+    """
+    axis_title_gap = 8  # reduce gap between axis title and axis tick labels
     title_fsize = 18
+    if np.issubdtype(data[column].dtype, np.number):
+        marginal = "box"
+    else:
+        marginal = None
+
     fig = px.histogram(
         wrap_df_column_values(df=data, column=column, width=30),
         x=column,
         color=color,
         color_discrete_sequence=CMAP_PHENO,
-        marginal="box",
+        marginal=marginal,
     )
     fig.update_traces(boxmean=True, notched=False, selector={"type": "box"})
     fig.update_layout(
@@ -153,6 +163,13 @@ def plot_phenotypic_column_histogram(
             **LAYOUTS["title"],
         },
         bargap=0.1,
-        barmode="relative",
+        barmode="group",
+        boxgap=0.1,
+        # Reduce gap between legend and plot area
+        # (https://plotly.com/python-api-reference/generated/plotly.graph_objects.Layout.html#plotly.graph_objects.layout.Legend.x)
+        legend={"x": 1.01},
     )
+    fig.update_xaxes(title_standoff=axis_title_gap)
+    fig.update_yaxes(title_standoff=axis_title_gap)
+
     return fig
