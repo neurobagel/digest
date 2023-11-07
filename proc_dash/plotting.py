@@ -143,6 +143,8 @@ def plot_phenotypic_column_histogram(
     axis_title_gap = 8  # reduce gap between axis title and axis tick labels
     title_fsize = 18
     if np.issubdtype(data[column].dtype, np.number):
+        # NOTE: The default box plot on-hover labels mean/q1/q3 etc. are a bit verbose, but there's no way to customize how they are displayed yet
+        # (See https://github.com/plotly/plotly.js/pull/3685)
         marginal = "box"
     else:
         marginal = None
