@@ -156,7 +156,16 @@ def plot_phenotypic_column_histogram(
         color_discrete_sequence=CMAP_PHENO,
         marginal=marginal,
     )
-    fig.update_traces(boxmean=True, notched=False, selector={"type": "box"})
+    fig.update_traces(
+        boxmean=True,
+        notched=False,
+        jitter=1,
+        customdata=data["participant_id"],
+        meta=column,
+        # customize hover info for data points to include participant_id as well as the column value (x)
+        hovertemplate="participant_id: %{customdata}<br>%{meta}=%{x}",
+        selector={"type": "box"},
+    )
     fig.update_layout(
         margin=LAYOUTS["margin"],
         title={
