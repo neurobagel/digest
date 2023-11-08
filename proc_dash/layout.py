@@ -358,6 +358,16 @@ def column_summary_card():
     )
 
 
+def session_toggle_switch():
+    """Generates a switch that toggles whether the column plot is stratified by session."""
+    return dbc.Switch(
+        id="session-toggle-switch",
+        label="Stratify plot by session",
+        value=False,
+        style={"display": "none"},
+    )
+
+
 def construct_layout():
     """Generates the overall dashboard layout."""
     return html.Div(
@@ -447,7 +457,15 @@ def construct_layout():
                         ),
                         width=8,
                     ),
-                    dbc.Col(column_summary_card()),
+                    dbc.Col(
+                        dbc.Stack(
+                            [
+                                column_summary_card(),
+                                session_toggle_switch(),
+                            ],
+                            gap=3,
+                        ),
+                    ),
                 ],
                 align="center",
             ),

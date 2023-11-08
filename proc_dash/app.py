@@ -298,16 +298,17 @@ def update_matching_rows(columns, virtual_data):
         Output("interactive-datatable", "filter_query"),
         Output("session-dropdown", "value"),
         Output("phenotypic-column-plotting-dropdown", "value"),
+        Output("session-toggle-switch", "value"),
     ],
     Input("memory-filename", "data"),
     prevent_initial_call=True,
 )
 def reset_selections(filename):
     """
-    If file contents change (i.e., selected new CSV for upload), reset displayed file name and dropdown filter
-    selection values. Reset will occur regardless of whether there is an issue processing the selected file.
+    If file contents change (i.e., selected new CSV for upload), reset displayed file name and selection values related to data filtering or plotting.
+    Reset will occur regardless of whether there is an issue processing the selected file.
     """
-    return f"Input file: {filename}", "", "", None
+    return f"Input file: {filename}", "", "", None, False
 
 
 @app.callback(
@@ -413,12 +414,16 @@ def display_phenotypic_column_dropdown(parsed_data):
     [
         Input("phenotypic-column-plotting-dropdown", "value"),
         Input("interactive-datatable", "derived_virtual_data"),
+        Input("session-toggle-switch", "value"),
     ],
     State("memory-overview", "data"),
     prevent_initial_call=True,
 )
 def plot_phenotypic_column(
-    selected_column: str, virtual_data: list, parsed_data: dict
+    selected_column: str,
+    virtual_data: list,
+    session_switch_value: bool,
+    parsed_data: dict,
 ):
     """When a column is selected from the dropdown, generate a histogram of the column values."""
     if selected_column is None or parsed_data.get("type") != "phenotypic":
@@ -433,8 +438,13 @@ def plot_phenotypic_column(
     else:
         data_to_plot = virtual_data
 
+    if session_switch_value:
+        color = "session"
+    else:
+        color = None
+
     return plot.plot_phenotypic_column_histogram(
-        pd.DataFrame.from_dict(data_to_plot), selected_column
+        pd.DataFrame.from_dict(data_to_plot), selected_column, color
     ), {"display": "block"}
 
 
@@ -472,6 +482,19 @@ def generate_column_summary(
         util.generate_column_summary_str(column_data),
         {"display": "block"},
     )
+
+
+@app.callback(
+    Output("session-toggle-switch", "style"),
+    Input("phenotypic-column-plotting-dropdown", "value"),
+    prevent_initial_call=True,
+)
+def display_session_switch(selected_column: str):
+    """When a column is selected from the dropdown, display switch to enable/disable stratifying the plot by session."""
+    if selected_column is None:
+        return {"display": "none"}
+
+    return {"display": "block"}
 
 
 if __name__ == "__main__":

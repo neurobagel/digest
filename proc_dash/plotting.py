@@ -1,6 +1,7 @@
 from itertools import product
 from textwrap import wrap
 
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -13,7 +14,7 @@ STATUS_COLORS = {
     "FAIL": CMAP[9],
     "UNAVAILABLE": CMAP[10],
 }
-HISTO_COLOR = CMAP[0]
+CMAP_PHENO = px.colors.qualitative.Vivid
 
 # TODO: could use util.PIPE_COMPLETE_STATUS_SHORT_DESC to define below variable instead
 PIPELINE_STATUS_ORDER = ["SUCCESS", "FAIL", "UNAVAILABLE"]
@@ -133,15 +134,37 @@ def populate_empty_records_pipeline_status_plot(
 
 
 def plot_phenotypic_column_histogram(
-    data: pd.DataFrame, column: str
+    data: pd.DataFrame, column: str, color: str = None
 ) -> go.Figure:
-    """Returns a histogram of the values of the given column across records in the active datatable."""
+    """
+    Returns a histogram of the values of the given column across records in the active datatable.
+    If the column data are continuous, a box plot of the distribution is also plotted as a subplot.
+    """
+    axis_title_gap = 8  # reduce gap between axis title and axis tick labels
     title_fsize = 18
+    if np.issubdtype(data[column].dtype, np.number):
+        # NOTE: The default box plot on-hover labels mean/q1/q3 etc. are a bit verbose, but there's no way to customize how they are displayed yet
+        # (See https://github.com/plotly/plotly.js/pull/3685)
+        marginal = "box"
+    else:
+        marginal = None
+
     fig = px.histogram(
         wrap_df_column_values(df=data, column=column, width=30),
         x=column,
-        color_discrete_sequence=[HISTO_COLOR],
-        text_auto=True,
+        color=color,
+        color_discrete_sequence=CMAP_PHENO,
+        marginal=marginal,
+    )
+    # Customize box plot appearance and on-hover labels for data points (display participant_id as well as the column value (x))
+    fig.update_traces(
+        boxmean=True,
+        notched=False,
+        jitter=1,
+        customdata=data["participant_id"],
+        meta=column,
+        hovertemplate="participant_id: %{customdata}<br>%{meta}=%{x}",
+        selector={"type": "box"},
     )
     fig.update_layout(
         margin=LAYOUTS["margin"],
@@ -151,5 +174,13 @@ def plot_phenotypic_column_histogram(
             **LAYOUTS["title"],
         },
         bargap=0.1,
+        barmode="group",
+        boxgap=0.1,
+        # Reduce gap between legend and plot area
+        # (https://plotly.com/python-api-reference/generated/plotly.graph_objects.Layout.html#plotly.graph_objects.layout.Legend.x)
+        legend={"x": 1.01},
     )
+    fig.update_xaxes(title_standoff=axis_title_gap)
+    fig.update_yaxes(title_standoff=axis_title_gap)
+
     return fig
