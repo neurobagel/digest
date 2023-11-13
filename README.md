@@ -6,7 +6,7 @@ This tool ingests tabular processing derivative status files called `bagels`, wh
 
 **Quickstart**: https://dash.neurobagel.org/
 
-Please also refer to our official [**neurobagel documentation**](https://neurobagel.org/nipoppy/configs/) to learn more about how `proc_dash` can be used together with the nipoppy project.
+For more information on how `proc_dash` can be used together with the Nipoppy project, also see the official [Nipoppy documentation](https://neurobagel.org/nipoppy/overview/).
 
 ## Preview
 ![alt text](img/ui_overview_table.png?raw=true)
