@@ -4,7 +4,9 @@
 
 This tool ingests tabular processing derivative status files called `bagels`, which can be generated automatically by pipeline tracker scripts for datasets organized according to the standards of the [Nipoppy](https://github.com/neurodatascience/nipoppy) workflow.
 
-Quickstart: https://dash.neurobagel.org/
+For more information on how `proc_dash` can be used together with the Nipoppy project, also see the official [Nipoppy documentation](https://neurobagel.org/nipoppy/overview/).
+
+**Quickstart**: https://dash.neurobagel.org/
 
 ## Preview
 ![alt text](img/ui_overview_table.png?raw=true)
