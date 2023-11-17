@@ -21,7 +21,7 @@ For more information on how to use `digest` with the Nipoppy project, also see t
 ![alt text](img/ui_overview_plots.png?raw=true)
 
 ## Input schema
-Input files to the dashboard contain long format data that must be formatted according to the [bagel schema](/schemas/) (see also the schemas [README](https://github.com/neurobagel/proc_dash/tree/main/schemas#readme) for more info). A single file is expected to correspond to one dataset, but may contain status information for multiple processing pipelines for that dataset.
+Input files to the dashboard contain long format data that must be formatted according to the [bagel schema](/schemas/) (see also the schemas [README](https://github.com/neurobagel/digest/tree/main/schemas#readme) for more info). A single file is expected to correspond to one dataset, but may contain status information for multiple processing pipelines for that dataset.
 
 ### Try it out
 You can view and download correctly formatted, minimal input tabular files from [here](/example_bagels/) to test out dashboard functionality.
@@ -41,7 +41,7 @@ In brief, generating a `bagel.csv` for your dataset can be as simple as:
 ## Local development
 To install `dash` from the source repository, run the following in a Python environment:
 ```bash
-git clone https://github.com/neurobagel/proc_dash.git
+git clone https://github.com/neurobagel/digest.git
 cd dash
 pip install -r requirements.txt
 ```

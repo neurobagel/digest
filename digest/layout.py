@@ -17,7 +17,7 @@ def navbar():
             html.I(className="bi bi-box-arrow-up-right me-1"),
             "Input schema",
         ],
-        href="https://github.com/neurobagel/proc_dash/tree/main/schemas",
+        href="https://github.com/neurobagel/digest/tree/main/schemas",
         target="_blank",
     )
 
@@ -26,7 +26,7 @@ def navbar():
             html.I(className="bi bi-github me-1"),
             "GitHub",
         ],
-        href="https://github.com/neurobagel/proc_dash",
+        href="https://github.com/neurobagel/digest",
         target="_blank",
     )
 
@@ -98,7 +98,7 @@ def sample_data_button():
     return dbc.Button(
         "Example input files",
         color="light",
-        href="https://github.com/neurobagel/proc_dash/blob/main/example_bagels",
+        href="https://github.com/neurobagel/digest/blob/main/example_bagels",
         target="_blank",  # open external site in new tab
     )
 
