@@ -5,7 +5,7 @@ Defines layout and layout components for dashboard.
 import dash_bootstrap_components as dbc
 from dash import dash_table, dcc, html
 
-import proc_dash.utility as util
+from . import utility as util
 
 DEFAULT_DATASET_NAME = "Dataset"
 
