@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from . import plotting as plot
-from . import utility as util
+import digest.plotting as plot
+import digest.utility as util
 
 
 @pytest.mark.parametrize(
