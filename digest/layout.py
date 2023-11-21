@@ -34,12 +34,21 @@ def navbar():
         dbc.Container(
             [
                 dbc.Row(
-                    dbc.Col(
-                        dbc.NavbarBrand(
-                            "Neuroimaging Dataset Derivatives Status Dashboard"
-                        )
-                    ),
+                    [
+                        dbc.Col(
+                            html.Img(
+                                src="/assets/neurobagel_logo.png",
+                                height="30px",
+                            )
+                        ),
+                        dbc.Col(
+                            dbc.NavbarBrand(
+                                "Neuroimaging and phenotypic dataset exploration"
+                            )
+                        ),
+                    ],
                     align="center",
+                    className="g-3",
                 ),
                 dbc.Row(
                     dbc.Col(
@@ -55,8 +64,7 @@ def navbar():
             ],
             fluid=True,
         ),
-        color="dark",
-        dark=True,
+        color="light",
     )
 
     return navbar
@@ -68,7 +76,7 @@ def upload_buttons() -> list:
         id={"type": "upload-data", "index": "imaging", "btn_idx": 0},
         children=dbc.Button(
             "Drag & Drop or Select an Imaging CSV File",
-            color="secondary",
+            color="light",
         ),
         multiple=False,
     )
@@ -77,7 +85,7 @@ def upload_buttons() -> list:
         id={"type": "upload-data", "index": "phenotypic", "btn_idx": 1},
         children=dbc.Button(
             "Drag & Drop or Select a Phenotypic CSV File",
-            color="secondary",
+            color="light",
         ),
         multiple=False,
     )
@@ -97,7 +105,8 @@ def sample_data_button():
     """Generates the button to view sample input files."""
     return dbc.Button(
         "Example input files",
-        color="light",
+        color="dark",
+        outline=True,
         href="https://github.com/neurobagel/digest/blob/main/example_bagels",
         target="_blank",  # open external site in new tab
     )
