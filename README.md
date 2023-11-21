@@ -39,10 +39,10 @@ In brief, generating a `bagel.csv` for your dataset can be as simple as:
     - This step can be repeated as needed to update the `bagel.csv` with newly processed subjects
 
 ## Local development
-To install `dash` from the source repository, run the following in a Python environment:
+To install `digest` from the source repository, run the following in a Python environment:
 ```bash
 git clone https://github.com/neurobagel/digest.git
-cd dash
+cd digest
 pip install -r requirements.txt
 ```
 
