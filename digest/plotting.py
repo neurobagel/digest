@@ -6,7 +6,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-import proc_dash.utility as util
+from . import utility as util
 
 CMAP = px.colors.qualitative.Bold
 STATUS_COLORS = {

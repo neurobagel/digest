@@ -8,13 +8,9 @@ import pandas as pd
 from dash import ALL, Dash, ctx, dcc, html
 from dash.dependencies import Input, Output, State
 
-import proc_dash.plotting as plot
-import proc_dash.utility as util
-from proc_dash.layout import (
-    DEFAULT_DATASET_NAME,
-    construct_layout,
-    upload_buttons,
-)
+from . import plotting as plot
+from . import utility as util
+from .layout import DEFAULT_DATASET_NAME, construct_layout, upload_buttons
 
 EMPTY_FIGURE_PROPS = {"data": [], "layout": {}, "frames": []}
 

@@ -5,7 +5,7 @@ Defines layout and layout components for dashboard.
 import dash_bootstrap_components as dbc
 from dash import dash_table, dcc, html
 
-import proc_dash.utility as util
+from . import utility as util
 
 DEFAULT_DATASET_NAME = "Dataset"
 
@@ -17,7 +17,7 @@ def navbar():
             html.I(className="bi bi-box-arrow-up-right me-1"),
             "Input schema",
         ],
-        href="https://github.com/neurobagel/proc_dash/tree/main/schemas",
+        href="https://github.com/neurobagel/digest/tree/main/schemas",
         target="_blank",
     )
 
@@ -26,7 +26,7 @@ def navbar():
             html.I(className="bi bi-github me-1"),
             "GitHub",
         ],
-        href="https://github.com/neurobagel/proc_dash",
+        href="https://github.com/neurobagel/digest",
         target="_blank",
     )
 
@@ -34,12 +34,21 @@ def navbar():
         dbc.Container(
             [
                 dbc.Row(
-                    dbc.Col(
-                        dbc.NavbarBrand(
-                            "Neuroimaging Dataset Derivatives Status Dashboard"
-                        )
-                    ),
+                    [
+                        dbc.Col(
+                            html.Img(
+                                src="/assets/neurobagel_logo.png",
+                                height="30px",
+                            )
+                        ),
+                        dbc.Col(
+                            dbc.NavbarBrand(
+                                "Neuroimaging and phenotypic dataset exploration"
+                            )
+                        ),
+                    ],
                     align="center",
+                    className="g-3",
                 ),
                 dbc.Row(
                     dbc.Col(
@@ -55,8 +64,7 @@ def navbar():
             ],
             fluid=True,
         ),
-        color="dark",
-        dark=True,
+        color="light",
     )
 
     return navbar
@@ -68,7 +76,7 @@ def upload_buttons() -> list:
         id={"type": "upload-data", "index": "imaging", "btn_idx": 0},
         children=dbc.Button(
             "Drag & Drop or Select an Imaging CSV File",
-            color="secondary",
+            color="light",
         ),
         multiple=False,
     )
@@ -77,7 +85,7 @@ def upload_buttons() -> list:
         id={"type": "upload-data", "index": "phenotypic", "btn_idx": 1},
         children=dbc.Button(
             "Drag & Drop or Select a Phenotypic CSV File",
-            color="secondary",
+            color="light",
         ),
         multiple=False,
     )
@@ -97,8 +105,9 @@ def sample_data_button():
     """Generates the button to view sample input files."""
     return dbc.Button(
         "Example input files",
-        color="light",
-        href="https://github.com/neurobagel/proc_dash/blob/main/example_bagels",
+        color="dark",
+        outline=True,
+        href="https://github.com/neurobagel/digest/blob/main/example_bagels",
         target="_blank",  # open external site in new tab
     )
 

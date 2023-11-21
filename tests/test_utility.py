@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import proc_dash.plotting as plot
-import proc_dash.utility as util
+import digest.plotting as plot
+import digest.utility as util
 
 
 @pytest.mark.parametrize(

@@ -6,7 +6,7 @@ from dash.testing.application_runners import import_app
 
 @pytest.fixture(scope="function")
 def test_server(dash_duo):
-    app = import_app("proc_dash.app")
+    app = import_app("digest.app")
     dash_duo.start_server(app)
 
     yield dash_duo
