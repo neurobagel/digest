@@ -43,7 +43,23 @@ def navbar():
                         ),
                         dbc.Col(
                             dbc.NavbarBrand(
-                                "Neuroimaging and phenotypic dataset exploration"
+                                [
+                                    "Neuroimaging and phenotypic dataset exploration",
+                                    html.H6(
+                                        dbc.Badge(
+                                            "beta",
+                                            pill=True,
+                                            className="ms-1",
+                                            id="beta-badge",
+                                        ),
+                                    ),
+                                    dbc.Tooltip(
+                                        "This dashboard is under active development. Please report any requests or issues on GitHub.",
+                                        target="beta-badge",
+                                        placement="right",
+                                    ),
+                                ],
+                                style={"display": "inline-flex"},
                             )
                         ),
                     ],
