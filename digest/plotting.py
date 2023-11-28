@@ -12,12 +12,13 @@ CMAP = px.colors.qualitative.Bold
 STATUS_COLORS = {
     "SUCCESS": CMAP[5],
     "FAIL": CMAP[9],
+    "INCOMPLETE": CMAP[3],
     "UNAVAILABLE": CMAP[10],
 }
 CMAP_PHENO = px.colors.qualitative.Vivid
 
 # TODO: could use util.PIPE_COMPLETE_STATUS_SHORT_DESC to define below variable instead
-PIPELINE_STATUS_ORDER = ["SUCCESS", "FAIL", "UNAVAILABLE"]
+PIPELINE_STATUS_ORDER = ["SUCCESS", "FAIL", "INCOMPLETE", "UNAVAILABLE"]
 
 # Define margins and title position for plots
 LAYOUTS = {
