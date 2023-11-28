@@ -14,7 +14,7 @@ The dashboard is compatible with the processing status `bagel.csv` files automat
 
 For more information on how to use `digest` with the Nipoppy project, also see the official [Nipoppy documentation](https://neurobagel.org/nipoppy/overview/).
 
-**Quickstart**: https://dash.neurobagel.org/
+**Quickstart**: https://digest.neurobagel.org/
 
 ## Preview
 ![alt text](img/ui_overview_table.png?raw=true)
