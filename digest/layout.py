@@ -212,9 +212,26 @@ def status_legend_card():
     return dbc.Card(
         dbc.CardBody(
             [
-                html.H5(
-                    "Recommended processing status legend",
-                    className="card-title",
+                html.Div(
+                    [
+                        html.H5(
+                            "Processing status legend",
+                            className="card-title",
+                        ),
+                        html.I(
+                            className="bi bi-question-circle ms-1",
+                            id="title-tooltip-target",
+                        ),
+                        dbc.Tooltip(
+                            dcc.Markdown(
+                                "These are the recommended status definitions for processing progress. "
+                                "For more details, see the [schema for an imaging digest file](https://github.com/neurobagel/digest/blob/main/schemas/bagel_schema.json)."
+                            ),
+                            autohide=False,
+                            target="title-tooltip-target",
+                        ),
+                    ],
+                    style={"display": "inline-flex"},
                 ),
                 html.P(
                     children=util.construct_legend_str(
