@@ -213,7 +213,7 @@ def status_legend_card():
         dbc.CardBody(
             [
                 html.H5(
-                    "Processing status legend",
+                    "Recommended processing status legend",
                     className="card-title",
                 ),
                 html.P(
