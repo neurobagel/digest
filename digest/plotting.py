@@ -17,9 +17,6 @@ STATUS_COLORS = {
 }
 CMAP_PHENO = px.colors.qualitative.Vivid
 
-# TODO: could use util.PIPE_COMPLETE_STATUS_SHORT_DESC to define below variable instead
-PIPELINE_STATUS_ORDER = ["SUCCESS", "FAIL", "INCOMPLETE", "UNAVAILABLE"]
-
 # Define margins and title position for plots
 LAYOUTS = {
     "margin": {"l": 30, "r": 30, "t": 60, "b": 30},  # margins of chart
@@ -76,7 +73,7 @@ def plot_pipeline_status_by_participants(
         text_auto=True,
         facet_col="pipeline_name",
         category_orders={
-            "pipeline_complete": PIPELINE_STATUS_ORDER,
+            "pipeline_complete": util.PIPE_COMPLETE_STATUS_SHORT_DESC.keys(),
             "session": session_list,
         },
         color_discrete_map=STATUS_COLORS,
@@ -103,7 +100,7 @@ def plot_pipeline_status_by_records(status_counts: pd.DataFrame) -> go.Figure:
         color="pipeline_complete",
         text_auto=True,
         category_orders={
-            "pipeline_complete": PIPELINE_STATUS_ORDER,
+            "pipeline_complete": util.PIPE_COMPLETE_STATUS_SHORT_DESC.keys(),
             "pipeline_name": status_counts["pipeline_name"]
             .drop_duplicates()
             .sort_values(),
