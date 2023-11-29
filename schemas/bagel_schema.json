@@ -70,24 +70,24 @@
     },
     "PIPELINE_STATUS_COLUMNS": {
         "pipeline_complete": {
-            "Description": "Status of pipeline run. 'SUCCESS': All stages of pipeline (as configured by user) finished successfully (all expected pipeline output files are present). 'FAIL': At least one stage of the pipeline failed. 'UNAVAILABLE': Pipeline has not been run for the subject session (output directory missing).",
+            "Description": "Status of pipeline run. 'SUCCESS': All expected pipeline output files (as configured by pipeline tracker) are present. 'FAIL': At least one expected pipeline output is missing. 'INCOMPLETE': Pipeline has not been run for the subject session (output directory missing). 'UNAVAILABLE': Relevant MRI modality for pipeline not available for subject session.",
             "dtype": "str",
             "IsRequired": true,
-            "Range": ["SUCCESS", "FAIL", "UNAVAILABLE"],
+            "Range": ["SUCCESS", "FAIL", "INCOMPLETE", "UNAVAILABLE"],
             "IsPrefixedColumn": false
         },
         "PHASE__": {
-            "Description": "Completion status of tracker-specified phase/subworkflow of a pipeline. This prefix must be followed by a second that is a composite of {pipeline_name}-{pipeline_version} to be grouped to the relevant pipeline. e.g., 'PHASE__fmriprep-20.2.7__func'. Each phase may correspond to a specific output subdirectory, and may be associated with multiple related output files. If phase and stage columns are both present, each phase is expected to correspond to >= 1 stage. 'SUCCESS': All output files corresponding to phase are present. 'FAIL': At least one output file of phase is missing. This status may be used to indicate that the phase crashed. 'UNAVAILABLE': Output subdirectory corresponding to phase is not present. This status may be used to indicate that this phase was not configured for the run. '' (no value):  Specified phase not in pipeline described by current row/record.",
+            "Description": "Completion status of tracker-specified phase/stream of a pipeline. To be grouped to the relevant pipeline, a second prefix denoting {pipeline_name}-{pipeline_version} must be included, e.g., 'PHASE__fmriprep-20.2.7__func'. Each phase may correspond to a specific output subdirectory or a set of related outputs. If phase and stage columns are both present, each phase is expected to correspond to >= 1 stage. 'SUCCESS': All output files corresponding to phase are present. 'FAIL': At least one output file of phase is missing. This status may be used to indicate that the phase crashed. 'INCOMPLETE': Parent pipeline has not been run for the subject session. 'UNAVAILABLE': Relevant MRI modality for pipeline not available for subject session. '' (no value):  Specified phase not in pipeline described by current row/record.",
             "dtype": "str",
             "IsRequired": false,
-            "Range": ["SUCCESS", "FAIL", "UNAVAILABLE", ""],
+            "Range": ["SUCCESS", "FAIL", "INCOMPLETE", "UNAVAILABLE", ""],
             "IsPrefixedColumn": true
         },
         "STAGE__": {
-            "Description": "Completion status of tracker-specified stage of a pipeline. This prefix must be followed by a second that is a composite of {pipeline_name}-{pipeline_version} to be grouped to the relevant pipeline. e.g., 'STAGE__fmriprep-20.2.7__space-MNI152Lin_res-1'. Each stage may correspond to a single output file or a few linked outputs expected to always coexist. If phase and stage columns are both present, each phase is expected to correspond to >= 1 stage. 'SUCCESS': All output files corresponding to stage are present. 'FAIL': At least one output file of stage is missing. This status may be used to indicate that the stage crashed. 'UNAVAILABLE': Output subdirectory corresponding to stage is not present. This status may be used to indicate that this stage was not configured for the run. '' (no value): Specified stage not in pipeline described by current row/record.",
+            "Description": "Completion status of tracker-specified stage of a pipeline. To be grouped to the relevant pipeline, a second prefix denoting {pipeline_name}-{pipeline_version} must be included, e.g., 'STAGE__fmriprep-20.2.7__space-MNI152Lin_res-1'. Each stage may correspond to a single output file, subdirectory, or a few related output files. If phase and stage columns are both present, each phase is expected to correspond to >= 1 stage. 'SUCCESS': All output files corresponding to stage are present. 'FAIL': At least one output file of stage is missing. This status may be used to indicate that the stage crashed. 'INCOMPLETE': Parent pipeline has not been run for the subject session. 'UNAVAILABLE': Relevant MRI modality for pipeline not available for subject session. '' (no value): Specified stage not in pipeline described by current row/record.",
             "dtype": "str",
             "IsRequired": false,
-            "Range": ["SUCCESS", "FAIL", "UNAVAILABLE", ""],
+            "Range": ["SUCCESS", "FAIL", "INCOMPLETE", "UNAVAILABLE", ""],
             "IsPrefixedColumn": true
         }
     }

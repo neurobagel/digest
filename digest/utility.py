@@ -19,9 +19,10 @@ BAGEL_CONFIG = {
     },
 }
 PIPE_COMPLETE_STATUS_SHORT_DESC = {
-    "SUCCESS": "All stages of pipeline finished successfully (all expected output files present).",
-    "FAIL": "At least one stage of the pipeline failed.",
-    "UNAVAILABLE": "Pipeline has not yet been run (output directory not available).",
+    "SUCCESS": "All expected output files of pipeline are present.",
+    "FAIL": "At least one expected output of pipeline is missing.",
+    "INCOMPLETE": "Pipeline has not yet been run (output directory not available).",
+    "UNAVAILABLE": "Relevant MRI modality for pipeline not available.",
 }
 
 
