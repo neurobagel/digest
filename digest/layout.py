@@ -223,6 +223,7 @@ def status_legend_card():
                             id="title-tooltip-target",
                         ),
                         dbc.Tooltip(
+                            # TODO: Use html.A instead to allow opening link in new tab
                             dcc.Markdown(
                                 "These are the recommended status definitions for processing progress. "
                                 "For more details, see the [schema for an imaging digest file](https://github.com/neurobagel/digest/blob/main/schemas/bagel_schema.json)."
@@ -445,9 +446,17 @@ def column_summary_card():
                     className="card-title",
                 ),
                 html.P(
-                    id="column-summary",
-                    style={"whiteSpace": "pre-wrap"},  # preserve newlines
+                    [
+                        "column data type: ",
+                        html.Span(id="column-data-type"),
+                        html.P(),
+                        html.P(
+                            id="column-summary",
+                            className="mb-0",
+                        ),
+                    ],
                     className="card-text",
+                    style={"whiteSpace": "pre-wrap"},
                 ),
             ],
         ),
