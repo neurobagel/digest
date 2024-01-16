@@ -293,6 +293,7 @@ def filtering_syntax_help_collapse():
                                         href="https://dash.plotly.com/datatable/filtering",
                                         target="_blank",
                                     ),
+                                    " To filter based on multiple sessions simultaneously, use the advanced filtering options below.",
                                 ],
                                 className="mb-0",
                             ),
