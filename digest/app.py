@@ -156,6 +156,40 @@ def display_dataset_metadata(parsed_data):
 
 
 @app.callback(
+    Output("filtering-syntax-help", "style"),
+    Input("memory-overview", "data"),
+    prevent_initial_call=True,
+)
+def display_filtering_syntax_help(parsed_data):
+    """When successfully uploaded data changes, show collapsible help text for datatable filtering syntax."""
+    if parsed_data is None:
+        return {"display": "none"}
+    return {"display": "block"}
+
+
+@app.callback(
+    [
+        Output("filtering-syntax-help-collapse", "is_open"),
+        Output("filtering-syntax-help-icon", "className"),
+    ],
+    Input("filtering-syntax-help-button", "n_clicks"),
+    [
+        State("filtering-syntax-help-collapse", "is_open"),
+        State("filtering-syntax-help-icon", "className"),
+    ],
+    prevent_initial_call=True,
+)
+def toggle_filtering_syntax_collapse_content(n_clicks, is_open, class_name):
+    """When filtering syntax help button is clicked, toggle visibility of the help text."""
+    if n_clicks:
+        if class_name == "bi bi-caret-right-fill me-1":
+            return not is_open, "bi bi-caret-down-fill me-1"
+        return not is_open, "bi bi-caret-right-fill me-1"
+
+    return is_open, class_name
+
+
+@app.callback(
     [
         Output("session-dropdown", "options"),
         Output("advanced-filter-form", "style"),

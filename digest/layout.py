@@ -254,7 +254,8 @@ def filtering_syntax_help_collapse():
             dbc.Button(
                 [
                     html.I(
-                        className="bi bi-chevron-right me-1",
+                        id="filtering-syntax-help-icon",
+                        className="bi bi-caret-right-fill me-1",
                     ),
                     "Built-in datatable filtering syntax",
                 ],
@@ -294,9 +295,11 @@ def filtering_syntax_help_collapse():
                     body=True,
                 ),
                 id="filtering-syntax-help-collapse",
-                is_open=True,
+                is_open=False,
             ),
-        ]
+        ],
+        id="filtering-syntax-help",
+        style={"display": "none"},
     )
 
 
