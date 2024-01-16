@@ -223,10 +223,16 @@ def status_legend_card():
                             id="title-tooltip-target",
                         ),
                         dbc.Tooltip(
-                            # TODO: Use html.A instead to allow opening link in new tab
-                            dcc.Markdown(
-                                "These are the recommended status definitions for processing progress. "
-                                "For more details, see the [schema for an imaging digest file](https://github.com/neurobagel/digest/blob/main/schemas/bagel_schema.json)."
+                            html.P(
+                                [
+                                    "These are the recommended status definitions for processing progress. For more details, see the ",
+                                    html.A(
+                                        "schema for an imaging digest file",
+                                        href="https://github.com/neurobagel/digest/blob/main/schemas/bagel_schema.json",
+                                        target="_blank",
+                                    ),
+                                ],
+                                className="mb-0",
                             ),
                             autohide=False,
                             target="title-tooltip-target",
@@ -342,9 +348,14 @@ def advanced_filter_form_title():
                 id="tooltip-question-target",
             ),
             dbc.Tooltip(
-                dcc.Markdown(
-                    "Filter based on multiple sessions simultaneously. "
-                    "Note that any data filters selected here will always be applied *before* any column filters specified directly in the data table."
+                html.P(
+                    [
+                        "Filter based on multiple sessions simultaneously. "
+                        "Note that any data filters selected here will always be applied ",
+                        html.I("before"),
+                        " any column filters specified directly in the data table.",
+                    ],
+                    className="mb-0",
                 ),
                 target="tooltip-question-target",
             ),
