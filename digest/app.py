@@ -552,4 +552,4 @@ def display_session_switch(selected_column: str):
 
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run(debug=True)
