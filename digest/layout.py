@@ -247,6 +247,59 @@ def status_legend_card():
     )
 
 
+def filtering_syntax_help_collapse():
+    """Generates the collapse element that displays syntax help for built-in datatable filtering."""
+    return html.Div(
+        [
+            dbc.Button(
+                [
+                    html.I(
+                        className="bi bi-chevron-right me-1",
+                    ),
+                    "Built-in datatable filtering syntax",
+                ],
+                color="link",
+                id="filtering-syntax-help-button",
+                n_clicks=0,
+                className="ps-0",
+            ),
+            dbc.Collapse(
+                dbc.Card(
+                    html.P(
+                        [
+                            dcc.Markdown(
+                                "To filter column values in the table below, supported operators include: `contains` (default), `=`, `>`, `<`, `>=`, `<=`, `!=`. To filter a column for missing (empty) values, use `is blank`.",
+                                style={
+                                    "white-space": "pre",
+                                    "display": "inline-flex",
+                                },
+                                # NOTE: dcc.Markdown actually has problems rendering custom padding/margin (https://community.plotly.com/t/dcc-markdown-style-margin-adjustment/15208) and by default always has bottom padding
+                                # As a result, the below setting actually doesn't anything (but is left here in case dcc.Markdown is fixed in the future)
+                                className="mb-0",
+                            ),
+                            html.P(
+                                [
+                                    "For detailed info on the filtering syntax available, see ",
+                                    html.A(
+                                        children="here.",
+                                        href="https://dash.plotly.com/datatable/filtering",
+                                        target="_blank",
+                                    ),
+                                ],
+                                className="mb-0",
+                            ),
+                        ],
+                        className="mb-0",
+                    ),
+                    body=True,
+                ),
+                id="filtering-syntax-help-collapse",
+                is_open=True,
+            ),
+        ]
+    )
+
+
 def overview_table():
     """Generates overview table for the tasks in the tabular data (imaging or phenotypic)."""
     return dash_table.DataTable(
@@ -440,6 +493,7 @@ def construct_layout():
                             ),
                         ]
                     ),
+                    filtering_syntax_help_collapse(),
                     overview_table(),
                 ],
                 style={"margin-top": "10px", "margin-bottom": "10px"},
