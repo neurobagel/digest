@@ -276,11 +276,12 @@ def filtering_syntax_help_collapse():
                     html.P(
                         [
                             dcc.Markdown(
-                                "To filter column values in the table below, supported operators include: `contains` (default), `=`, `>`, `<`, `>=`, `<=`, `!=`. To filter a column for missing (empty) values, use `is blank`.",
-                                style={
-                                    "white-space": "pre",
-                                    "display": "inline-flex",
-                                },
+                                "To filter column values in the table below, "
+                                "supported operators include: `contains` (default), "
+                                "`=`, `>`, `<`, `>=`, `<=`, `!=`. "
+                                "To filter a column for missing (empty) values, use `is blank`.\n"
+                                "(Note: there is currently no filter for `is not blank`. This is a known limitation that will be fixed in the future.)",
+                                style={"white-space": "pre-wrap"},
                                 # NOTE: dcc.Markdown actually has problems rendering custom padding/margin (https://community.plotly.com/t/dcc-markdown-style-margin-adjustment/15208) and by default always has bottom padding
                                 # As a result, the below setting actually doesn't anything (but is left here in case dcc.Markdown is fixed in the future)
                                 className="mb-0",
