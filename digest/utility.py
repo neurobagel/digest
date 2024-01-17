@@ -43,6 +43,23 @@ def reset_column_dtypes(data: pd.DataFrame) -> pd.DataFrame:
     return data_retyped
 
 
+def type_column_for_dashtable(df_column: pd.Series) -> str:
+    """
+    Determines the appropriate type for a given column for use in a dash datatable, using Pandas and the column dtype.
+    This is needed because dash datatable does not automatically infer column data types, and will treat all columns as 'text' for filtering purposes by default
+    (the actual default column type is 'any' if not defined manually).
+
+    See also https://dash.plotly.com/datatable/filtering.
+
+    # TODO:
+    # - This is pretty simplistic and mainly to enable easier selection of filtering UI syntax - we might be able to remove this after switch to AG Grid
+    # - If needed, in future could support explicitly setting 'datetime' type as well, by applying pd.to_datetime() and catching any errors
+    """
+    if np.issubdtype(df_column.dtype, np.number):
+        return "numeric"
+    return "text"
+
+
 def construct_legend_str(status_desc: dict) -> str:
     """From a dictionary, constructs a legend-style string with multiple lines in the format of key: value."""
     return "\n".join(

@@ -156,6 +156,40 @@ def display_dataset_metadata(parsed_data):
 
 
 @app.callback(
+    Output("filtering-syntax-help", "style"),
+    Input("memory-overview", "data"),
+    prevent_initial_call=True,
+)
+def display_filtering_syntax_help(parsed_data):
+    """When successfully uploaded data changes, show collapsible help text for datatable filtering syntax."""
+    if parsed_data is None:
+        return {"display": "none"}
+    return {"display": "block"}
+
+
+@app.callback(
+    [
+        Output("filtering-syntax-help-collapse", "is_open"),
+        Output("filtering-syntax-help-icon", "className"),
+    ],
+    Input("filtering-syntax-help-button", "n_clicks"),
+    [
+        State("filtering-syntax-help-collapse", "is_open"),
+        State("filtering-syntax-help-icon", "className"),
+    ],
+    prevent_initial_call=True,
+)
+def toggle_filtering_syntax_collapse_content(n_clicks, is_open, class_name):
+    """When filtering syntax help button is clicked, toggle visibility of the help text."""
+    if n_clicks:
+        if class_name == "bi bi-caret-right-fill me-1":
+            return not is_open, "bi bi-caret-down-fill me-1"
+        return not is_open, "bi bi-caret-right-fill me-1"
+
+    return is_open, class_name
+
+
+@app.callback(
     [
         Output("session-dropdown", "options"),
         Output("advanced-filter-form", "style"),
@@ -251,7 +285,13 @@ def update_outputs(
             status_values=pipeline_selected_filters,
         )
     tbl_columns = [
-        {"name": i, "id": i, "hideable": True} for i in data.columns
+        {
+            "name": i,
+            "id": i,
+            "hideable": True,
+            "type": util.type_column_for_dashtable(data[i]),
+        }
+        for i in data.columns
     ]
     tbl_data = data.to_dict("records")
 
@@ -447,6 +487,7 @@ def plot_phenotypic_column(
 @app.callback(
     [
         Output("column-summary-title", "children"),
+        Output("column-data-type", "children"),
         Output("column-summary", "children"),
         Output("column-summary-card", "style"),
     ],
@@ -454,20 +495,36 @@ def plot_phenotypic_column(
         Input("phenotypic-column-plotting-dropdown", "value"),
         Input("interactive-datatable", "derived_virtual_data"),
     ],
-    State("memory-overview", "data"),
+    [
+        State("memory-overview", "data"),
+        State("interactive-datatable", "columns"),
+    ],
     prevent_initial_call=True,
 )
 def generate_column_summary(
-    selected_column: str, virtual_data: list, parsed_data: dict
+    selected_column: str,
+    virtual_data: list,
+    parsed_data: dict,
+    datatable_columns: list,
 ):
     """When a column is selected from the dropdown, generate summary stats of the column values."""
     if selected_column is None or parsed_data.get("type") != "phenotypic":
-        return None, None, {"display": "none"}
+        return None, None, None, {"display": "none"}
+
+    column_datatype = next(
+        (
+            column.get("type", None)
+            for column in datatable_columns
+            if column["name"] == selected_column
+        ),
+        None,
+    )
 
     # If no data is visible in the datatable (i.e., zero matches), return an informative message
     if not virtual_data:
         return (
             selected_column,
+            column_datatype,
             html.I("No matching records available to compute value summary"),
             {"display": "block"},
         )
@@ -475,6 +532,7 @@ def generate_column_summary(
     column_data = pd.DataFrame.from_dict(virtual_data)[selected_column]
     return (
         selected_column,
+        column_datatype,
         util.generate_column_summary_str(column_data),
         {"display": "block"},
     )
@@ -494,4 +552,4 @@ def display_session_switch(selected_column: str):
 
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run(debug=True)
