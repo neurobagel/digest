@@ -101,7 +101,7 @@ def upload_buttons() -> list:
     upload_imaging = dcc.Upload(
         id={"type": "upload-data", "index": "imaging", "btn_idx": 0},
         children=dbc.Button(
-            "Drag & Drop or Select an Imaging CSV File",
+            "Select imaging CSV file...",
             color="light",
         ),
         multiple=False,
@@ -110,7 +110,7 @@ def upload_buttons() -> list:
     upload_phenotypic = dcc.Upload(
         id={"type": "upload-data", "index": "phenotypic", "btn_idx": 1},
         children=dbc.Button(
-            "Drag & Drop or Select a Phenotypic CSV File",
+            "Select phenotypic CSV file...",
             color="light",
         ),
         multiple=False,
@@ -228,7 +228,6 @@ def table_summary():
             html.Div(
                 # TODO: Merge this component with the input-filename component once error alert elements are implemented
                 id="upload-message",
-                children="Upload a CSV file OR choose from one of the available dataset digests to begin.",
             ),
             html.Div(
                 id="column-count",
@@ -540,10 +539,19 @@ def construct_layout():
             dbc.Row(
                 children=[
                     dbc.Col(
-                        upload_container(),
-                        width=5,  # TODO: Check how this looks on smaller screen - maybe stack is better
+                        [
+                            html.Div("Upload your own digest file:"),
+                            upload_container(),
+                        ],
+                        width=5,
                     ),
-                    dbc.Col(available_digest_menu()),
+                    dbc.Col(
+                        [
+                            html.Div("Load an available digest file:"),
+                            available_digest_menu(),
+                        ],
+                        width=7,
+                    ),
                 ],
                 style={"margin-top": "10px", "margin-bottom": "10px"},
             ),
