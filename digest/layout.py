@@ -21,6 +21,15 @@ def navbar():
         target="_blank",
     )
 
+    example_inputs = dbc.NavLink(
+        children=[
+            html.I(className="bi bi-box-arrow-up-right me-1"),
+            "Example input files",
+        ],
+        href="https://github.com/neurobagel/digest/blob/main/example_bagels",
+        target="_blank",
+    )
+
     github = dbc.NavLink(
         children=[
             html.I(className="bi bi-github me-1"),
@@ -71,6 +80,7 @@ def navbar():
                         dbc.Nav(
                             [
                                 schemas,
+                                example_inputs,
                                 github,
                             ],
                         ),
@@ -154,17 +164,6 @@ def upload_container():
         id="upload-buttons",
         children=upload_buttons(),
         className="hstack gap-3",
-    )
-
-
-def sample_data_button():
-    """Generates the button to view sample input files."""
-    return dbc.Button(
-        "Example input files",
-        color="dark",
-        outline=True,
-        href="https://github.com/neurobagel/digest/blob/main/example_bagels",
-        target="_blank",  # open external site in new tab
     )
 
 
@@ -538,11 +537,6 @@ def construct_layout():
             dcc.Store(id="memory-sessions"),
             dcc.Store(id="memory-overview"),
             dcc.Store(id="memory-pipelines"),
-            # html.Div(
-            #     children=[upload_container()],  # , sample_data_button() - TODO: Move to navbar
-            #     style={"margin-top": "10px", "margin-bottom": "10px"},
-            #     className="hstack gap-3",
-            # ),
             dbc.Row(
                 children=[
                     dbc.Col(
