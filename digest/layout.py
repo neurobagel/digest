@@ -117,7 +117,12 @@ def available_digest_menu():
                 label="Available imaging digests",
                 children=[
                     dbc.DropdownMenuItem(
-                        "Quebec Parkinson Network", id="qpn-imaging-digest"
+                        "Quebec Parkinson Network",
+                        {
+                            "type": "load-available-digest",
+                            "index": "imaging",
+                            "dataset": "qpn",
+                        },
                     ),
                 ],
                 group=True,
@@ -128,7 +133,12 @@ def available_digest_menu():
                 label="Available phenotypic digests",
                 children=[
                     dbc.DropdownMenuItem(
-                        "Quebec Parkinson Network", id="qpn-phenotypic-digest"
+                        "Quebec Parkinson Network",
+                        id={
+                            "type": "load-available-digest",
+                            "index": "phenotypic",
+                            "dataset": "qpn",
+                        },
                     ),
                 ],
                 group=True,
@@ -536,7 +546,7 @@ def construct_layout():
                 children=[
                     dbc.Col(
                         upload_container(),
-                        width=5,
+                        width=5,  # TODO: Check how this looks on smaller screen - maybe stack is better
                     ),
                     dbc.Col(available_digest_menu()),
                 ],
