@@ -228,7 +228,7 @@ def table_summary():
             html.Div(
                 # TODO: Merge this component with the input-filename component once error alert elements are implemented
                 id="upload-message",
-                children="Upload a CSV file to begin.",
+                children="Upload a CSV file OR choose from one of the available dataset digests to begin.",
             ),
             html.Div(
                 id="column-count",
