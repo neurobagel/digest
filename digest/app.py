@@ -107,21 +107,20 @@ def process_bagel(upload_contents, available_digest_nclicks, filenames):
     and (2) pipeline-specific metadata as individual dataframes within a dict.
     Returns any errors encountered during input file processing as a user-friendly message.
     """
-    print(ctx.triggered_id)  # TODO: Remove - for debugging
-
     bagel = None
     upload_error = None
 
     schema = ctx.triggered_id.index
-    print(schema)  # TODO: Remove - for debugging
     if ctx.triggered_id.type == "upload-data":
         filename = filenames[ctx.triggered_id.btn_idx]
         bagel, upload_error = util.load_file_from_contents(
             filename=filename, contents=ctx.triggered[0]["value"]
         )
     else:
-        filename = util.PUBLIC_DIGEST_FILE_PATHS["qpn"][schema].name
-        filepath = util.PUBLIC_DIGEST_FILE_PATHS["qpn"][schema]
+        filepath = util.PUBLIC_DIGEST_FILE_PATHS[ctx.triggered_id.dataset][
+            schema
+        ]
+        filename = filepath.name
         bagel, upload_error = util.load_file_from_path(filepath)
 
     try:
