@@ -22,7 +22,6 @@ server = app.server
 app.layout = construct_layout()
 
 
-# TODO: Add conditional that only updates summary-title if digest loaded instead of uploaded
 @app.callback(
     [
         Output("dataset-name-modal", "is_open"),
@@ -36,19 +35,49 @@ app.layout = construct_layout()
     [
         State("dataset-name-modal", "is_open"),
         State("dataset-name-input", "value"),
+        State("was-upload-used", "data"),
+        State("memory-filename", "data"),
     ],
     prevent_initial_call=True,
 )
 def toggle_dataset_name_dialog(
-    parsed_data, submit_clicks, is_open, name_value
+    parsed_data, submit_clicks, is_open, name_value, was_upload_used, filename
 ):
     """Toggles a popup window for user to enter a dataset name when the data store changes."""
     if parsed_data is not None:
-        if name_value not in [None, ""]:
-            return not is_open, name_value, None
-        return not is_open, DEFAULT_DATASET_NAME, None
+        if was_upload_used:
+            if name_value not in [None, ""]:
+                return not is_open, name_value, None
+            return not is_open, DEFAULT_DATASET_NAME, None
+
+        for available_dataset in util.PUBLIC_DIGEST_FILE_PATHS.values():
+            if available_dataset.get(parsed_data.get("type")).name == filename:
+                dataset_name = available_dataset.get(
+                    "name", DEFAULT_DATASET_NAME
+                )
+                return False, dataset_name, None
 
     return is_open, None, None
+
+
+@app.callback(
+    Output("was-upload-used", "data"),
+    [
+        Input(
+            {"type": "upload-data", "index": ALL, "btn_idx": ALL}, "contents"
+        ),
+        Input(
+            {"type": "load-available-digest", "index": ALL, "dataset": ALL},
+            "n_clicks",
+        ),
+    ],
+    prevent_initial_call=True,
+)
+def set_was_upload_used_flag(upload_contents, available_digest_nclicks):
+    """Set a flag to indicate whether the user uploaded a new file or loaded a public digest."""
+    if ctx.triggered_id.type == "upload-data":
+        return True
+    return False
 
 
 @app.callback(

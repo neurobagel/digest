@@ -533,6 +533,7 @@ def construct_layout():
     return html.Div(
         children=[
             navbar(),
+            dcc.Store(id="was-upload-used"),
             dcc.Store(id="memory-filename"),
             dcc.Store(id="memory-sessions"),
             dcc.Store(id="memory-overview"),
