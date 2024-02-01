@@ -25,15 +25,20 @@ PIPE_COMPLETE_STATUS_SHORT_DESC = {
     "UNAVAILABLE": "Relevant MRI modality for pipeline not available.",
 }
 
-# TODO: Replace with true file paths
+# TODO: Consider fetching the files from the remote repo if it doesn't slow things down too much
+# TODO: Consider moving this to a config file
 PUBLIC_DIGEST_FILE_PATHS = {
     "qpn": {
         "name": "Quebec Parkinson Network",
-        "imaging": Path(__file__).absolute().parents[1]
-        / "example_bagels"
+        "imaging": Path(__file__).absolute().parents[2]
+        / "nipoppy-qpn"
+        / "nipoppy"
+        / "digest"
         / "qpn_imaging_availability_digest.csv",
-        "phenotypic": Path(__file__).absolute().parents[1]
-        / "example_bagels"
+        "phenotypic": Path(__file__).absolute().parents[2]
+        / "nipoppy-qpn"
+        / "nipoppy"
+        / "digest"
         / "qpn_tabular_availability_digest.csv",
     }
 }
