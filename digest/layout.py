@@ -109,6 +109,36 @@ def upload_buttons() -> list:
     return [upload_imaging, upload_phenotypic]
 
 
+def available_digest_menu():
+    """Generates the dropdown menus for selecting a dataset with a 'preloaded' digest file."""
+    return dbc.ButtonGroup(
+        children=[
+            dbc.DropdownMenu(
+                label="Available imaging digests",
+                children=[
+                    dbc.DropdownMenuItem(
+                        "Quebec Parkinson Network", id="qpn-imaging-digest"
+                    ),
+                ],
+                group=True,
+                id="imaging-digest-dropdown",
+                color="light",
+            ),
+            dbc.DropdownMenu(
+                label="Available phenotypic digests",
+                children=[
+                    dbc.DropdownMenuItem(
+                        "Quebec Parkinson Network", id="qpn-phenotypic-digest"
+                    ),
+                ],
+                group=True,
+                id="phenotypic-digest-dropdown",
+                color="light",
+            ),
+        ],
+    )
+
+
 def upload_container():
     return html.Div(
         id="upload-buttons",
@@ -497,10 +527,20 @@ def construct_layout():
             dcc.Store(id="memory-sessions"),
             dcc.Store(id="memory-overview"),
             dcc.Store(id="memory-pipelines"),
-            html.Div(
-                children=[upload_container(), sample_data_button()],
+            # html.Div(
+            #     children=[upload_container()],  # , sample_data_button() - TODO: Move to navbar
+            #     style={"margin-top": "10px", "margin-bottom": "10px"},
+            #     className="hstack gap-3",
+            # ),
+            dbc.Row(
+                children=[
+                    dbc.Col(
+                        upload_container(),
+                        width=5,
+                    ),
+                    dbc.Col(available_digest_menu()),
+                ],
                 style={"margin-top": "10px", "margin-bottom": "10px"},
-                className="hstack gap-3",
             ),
             dataset_name_dialog(),
             html.Div(
