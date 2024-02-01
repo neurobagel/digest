@@ -22,6 +22,7 @@ server = app.server
 app.layout = construct_layout()
 
 
+# TODO: Add conditional that only updates summary-title if digest loaded instead of uploaded
 @app.callback(
     [
         Output("dataset-name-modal", "is_open"),
@@ -59,31 +60,58 @@ def toggle_dataset_name_dialog(
         Output("upload-message", "children"),
         Output("interactive-datatable", "export_format"),
     ],
-    Input({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "contents"),
+    [
+        Input(
+            {"type": "upload-data", "index": ALL, "btn_idx": ALL}, "contents"
+        ),
+        Input(
+            {"type": "load-available-digest", "index": ALL, "dataset": ALL},
+            "n_clicks",
+        ),
+    ],
     State({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "filename"),
     prevent_initial_call=True,
 )
-def process_bagel(contents, filenames):
+def process_bagel(upload_contents, available_digest_nclicks, filenames):
     """
     From the contents of a correctly-formatted uploaded .csv file, parse and store (1) the pipeline overview data as a dataframe,
     and (2) pipeline-specific metadata as individual dataframes within a dict.
     Returns any errors encountered during input file processing as a user-friendly message.
     """
-    filename = filenames[ctx.triggered_id.btn_idx]
-    try:
-        bagel, upload_error = util.parse_csv_contents(
-            contents=ctx.triggered[0]["value"],
-            filename=filename,
-            schema=ctx.triggered_id.index,
+    print(ctx.triggered_id)  # TODO: Remove - for debugging
+
+    bagel = None
+    upload_error = None
+
+    schema = ctx.triggered_id.index
+    print(schema)  # TODO: Remove - for debugging
+    if ctx.triggered_id.type == "upload-data":
+        filename = filenames[ctx.triggered_id.btn_idx]
+        bagel, upload_error = util.load_file_from_contents(
+            filename=filename, contents=ctx.triggered[0]["value"]
         )
-        if upload_error is None:
+    else:
+        filename = util.PUBLIC_DIGEST_FILE_PATHS["qpn"][schema].name
+        filepath = util.PUBLIC_DIGEST_FILE_PATHS["qpn"][schema]
+        bagel, upload_error = util.load_file_from_path(filepath)
+
+    try:
+        if (
+            bagel is not None
+            and (
+                upload_error := util.get_schema_incompliance_errors(
+                    bagel, schema
+                )
+            )
+            is None
+        ):
+            bagel["session"] = bagel["session"].astype(str)
             session_list = bagel["session"].unique().tolist()
+
             overview_df = util.get_pipelines_overview(
-                bagel=bagel, schema=ctx.triggered_id.index
+                bagel=bagel, schema=schema
             )
-            pipelines_dict = util.extract_pipelines(
-                bagel=bagel, schema=ctx.triggered_id.index
-            )
+            pipelines_dict = util.extract_pipelines(bagel=bagel, schema=schema)
     except Exception as exc:
         print(exc)  # for debugging
         upload_error = "Something went wrong while processing this file."
@@ -105,10 +133,7 @@ def process_bagel(contents, filenames):
     return (
         filename,
         session_list,
-        {
-            "type": ctx.triggered_id.index,
-            "data": overview_df.to_dict("records"),
-        },
+        {"type": schema, "data": overview_df.to_dict("records")},
         pipelines_dict,
         None,
         "csv",
