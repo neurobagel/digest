@@ -15,7 +15,9 @@ from .layout import DEFAULT_DATASET_NAME, construct_layout, upload_buttons
 EMPTY_FIGURE_PROPS = {"data": [], "layout": {}, "frames": []}
 
 app = Dash(
-    __name__, external_stylesheets=[dbc.themes.FLATLY, dbc.icons.BOOTSTRAP]
+    __name__,
+    external_stylesheets=[dbc.themes.FLATLY, dbc.icons.BOOTSTRAP],
+    title="Digest",
 )
 server = app.server
 
