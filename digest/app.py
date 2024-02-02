@@ -41,23 +41,34 @@ app.layout = construct_layout()
     prevent_initial_call=True,
 )
 def toggle_dataset_name_dialog(
-    parsed_data, submit_clicks, is_open, name_value, was_upload_used, filename
+    parsed_data,
+    dialog_submit_clicks,
+    dialog_is_open,
+    name_input_value,
+    was_upload_used,
+    filename,
 ):
     """Toggles a popup window for user to enter a dataset name when the data store changes."""
     if parsed_data is not None:
         if was_upload_used:
-            if name_value not in [None, ""]:
-                return not is_open, name_value, None
-            return not is_open, DEFAULT_DATASET_NAME, None
+            # If a non-empty name was entered in the modal, use it. Otherwise, use a default name.
+            if name_input_value not in [None, ""]:
+                return not dialog_is_open, name_input_value, None
+            return not dialog_is_open, DEFAULT_DATASET_NAME, None
 
+        # If the user loaded a preset file, do not open the dataset name modal, and get the name of the dataset
+        # from the preset dataset dictionary insteaad, based on the matching filename.
         for available_dataset in util.PUBLIC_DIGEST_FILE_PATHS.values():
-            if available_dataset.get(parsed_data.get("type")).name == filename:
+            relevant_digest_path = available_dataset.get(
+                parsed_data.get("type")
+            )
+            if relevant_digest_path.name == filename:
                 dataset_name = available_dataset.get(
                     "name", DEFAULT_DATASET_NAME
                 )
                 return False, dataset_name, None
 
-    return is_open, None, None
+    return dialog_is_open, None, None
 
 
 @app.callback(
@@ -108,8 +119,10 @@ def process_bagel(upload_contents, available_digest_nclicks, filenames):
     Returns any errors encountered during input file processing as a user-friendly message.
     """
     bagel = None
+    # Instead of raising errors in the console, store them in informative strings to be displayed in the UI
     upload_error = None
 
+    # Get the schema type for the selected digest file ("imaging" or "phenotypic") from the ID of the triggered input component
     schema = ctx.triggered_id.index
     if ctx.triggered_id.type == "upload-data":
         filename = filenames[ctx.triggered_id.btn_idx]
@@ -123,11 +136,14 @@ def process_bagel(upload_contents, available_digest_nclicks, filenames):
         filename = filepath.name
         bagel, upload_error = util.load_file_from_path(filepath)
 
+    # The below try-except block is used to catch any errors raised during internal reformatting
+    # of the loaded dataframe which are not caught by the schema validation.
+    # This is so any unhandled errors still produce a generic user-friendly (but generic) message in the UI.
     try:
         if (
             bagel is not None
             and (
-                upload_error := util.get_schema_incompliance_errors(
+                upload_error := util.get_schema_validation_errors(
                     bagel, schema
                 )
             )

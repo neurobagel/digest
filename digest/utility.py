@@ -25,8 +25,10 @@ PIPE_COMPLETE_STATUS_SHORT_DESC = {
     "UNAVAILABLE": "Relevant MRI modality for pipeline not available.",
 }
 
-# TODO: Consider fetching the files from the remote repo if it doesn't slow things down too much
-# TODO: Consider moving this to a config file
+# TODO:
+# Could also use URLs for "imaging" or "phenotypic" locations if fetching from a remote repo doesn't slow things down too much.
+# Note that this would only work for public repos or private repos with a token.
+# TODO: move this to a config file?
 PUBLIC_DIGEST_FILE_PATHS = {
     "qpn": {
         "name": "Quebec Parkinson Network",
@@ -261,7 +263,7 @@ def load_file_from_contents(
     return bagel, None
 
 
-def get_schema_incompliance_errors(
+def get_schema_validation_errors(
     bagel: pd.DataFrame, schema: str
 ) -> Optional[str]:
     """Checks that the input CSV adheres to the schema for the selected bagel type. If not, returns an informative error message as a string."""

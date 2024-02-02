@@ -128,7 +128,7 @@ def available_digest_menu():
                 children=[
                     dbc.DropdownMenuItem(
                         "Quebec Parkinson Network",
-                        {
+                        id={
                             "type": "load-available-digest",
                             "index": "imaging",
                             "dataset": "qpn",
