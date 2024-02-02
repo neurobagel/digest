@@ -25,6 +25,26 @@ PIPE_COMPLETE_STATUS_SHORT_DESC = {
     "UNAVAILABLE": "Relevant MRI modality for pipeline not available.",
 }
 
+# TODO:
+# Could also use URLs for "imaging" or "phenotypic" locations if fetching from a remote repo doesn't slow things down too much.
+# Note that this would only work for public repos or private repos with a token.
+# TODO: move this to a config file?
+PUBLIC_DIGEST_FILE_PATHS = {
+    "qpn": {
+        "name": "Quebec Parkinson Network",
+        "imaging": Path(__file__).absolute().parents[2]
+        / "nipoppy-qpn"
+        / "nipoppy"
+        / "digest"
+        / "qpn_imaging_availability_digest.csv",
+        "phenotypic": Path(__file__).absolute().parents[2]
+        / "nipoppy-qpn"
+        / "nipoppy"
+        / "digest"
+        / "qpn_tabular_availability_digest.csv",
+    }
+}
+
 
 def reset_column_dtypes(data: pd.DataFrame) -> pd.DataFrame:
     """
@@ -219,44 +239,49 @@ def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
     return reset_column_dtypes(pipeline_complete_df)
 
 
-def parse_csv_contents(
-    contents, filename, schema
+def load_file_from_path(
+    file_path: Path,
 ) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
-    """
-    Returns contents of a bagel.csv as a dataframe, if no issues detected.
+    """Reads in a CSV file (if it exists) and returns it as a dataframe."""
+    if not file_path.exists():
+        return None, "File not found."
 
-    Returns
-    -------
-    pd.DataFrame or None
-        Dataframe containing contents of the parsed input tabular file.
-    str or None
-        Informative error raised during parsing of the input, if applicable.
-    """
-    error_msg = None
-    if filename.endswith(".csv"):
-        content_type, content_string = contents.split(",")
-        decoded = base64.b64decode(content_string)
-        bagel = pd.read_csv(io.StringIO(decoded.decode("utf-8")))
-
-        if (
-            len(
-                missing_req_cols := get_missing_required_columns(
-                    bagel, BAGEL_CONFIG[schema]["schema_file"]
-                )
-            )
-            > 0
-        ):
-            error_msg = f"The selected CSV is missing the following required {schema} metadata columns: {missing_req_cols}. Please try again."
-        elif not are_subjects_same_across_pipelines(bagel, schema):
-            error_msg = "The pipelines in the selected CSV do not have the same number of subjects and sessions. Please try again."
-    else:
-        error_msg = "Invalid file type. Please upload a .csv file."
-
-    if error_msg is not None:
-        return None, error_msg
-
-    bagel["session"] = bagel["session"].astype(str)
+    bagel = pd.read_csv(file_path)
     return bagel, None
+
+
+def load_file_from_contents(
+    filename: str, contents: str
+) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
+    """Returns contents of an uploaded CSV file as a dataframe."""
+    if not filename.endswith(".csv"):
+        return None, "Invalid file type. Please upload a .csv file."
+
+    content_type, content_string = contents.split(",")
+    decoded = base64.b64decode(content_string)
+    bagel = pd.read_csv(io.StringIO(decoded.decode("utf-8")))
+    return bagel, None
+
+
+def get_schema_validation_errors(
+    bagel: pd.DataFrame, schema: str
+) -> Optional[str]:
+    """Checks that the input CSV adheres to the schema for the selected bagel type. If not, returns an informative error message as a string."""
+    error_msg = None
+
+    if (
+        len(
+            missing_req_cols := get_missing_required_columns(
+                bagel, BAGEL_CONFIG[schema]["schema_file"]
+            )
+        )
+        > 0
+    ):
+        error_msg = f"The selected CSV is missing the following required {schema} metadata columns: {missing_req_cols}. Please try again."
+    elif not are_subjects_same_across_pipelines(bagel, schema):
+        error_msg = "The pipelines in the selected CSV do not have the same number of subjects and sessions. Please try again."
+
+    return error_msg
 
 
 def filter_records(

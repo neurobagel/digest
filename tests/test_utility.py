@@ -12,8 +12,8 @@ import digest.utility as util
 )
 def test_invalid_filetype_returns_informative_error(filename):
     toy_upload_contents = "stand-in for a base64 encoded file contents string"
-    bagel, upload_error = util.parse_csv_contents(
-        toy_upload_contents, filename, "imaging"
+    bagel, upload_error = util.load_file_from_contents(
+        filename, toy_upload_contents
     )
 
     assert bagel is None
