@@ -300,8 +300,8 @@ def get_schema_validation_errors(
         ).shape[0]
         > 0
     ):
-        # TODO: Switch to warning once toasts are enabled?
-        error_msg = f"The selected CSV contains duplicate entries across the following columns: {unique_value_id_columns}. Please try again."
+        # TODO: Switch to warning once alerts are implemented for errors?
+        error_msg = f"The selected CSV contains duplicate entries in the combination of: {unique_value_id_columns}. Please double check your input."
 
     return error_msg
 
