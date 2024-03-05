@@ -2,7 +2,7 @@ import base64
 import io
 import json
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -117,16 +117,21 @@ def get_missing_required_columns(bagel: pd.DataFrame, schema_file: str) -> set:
     )
 
 
-def get_event_id_columns(bagel: pd.DataFrame, schema: str) -> list:
-    """Returns names of columns which identify a unique assessment or processing pipeline."""
+def get_event_id_columns(bagel: pd.DataFrame, schema: str) -> Union[str, list]:
+    """
+    Returns name(s) of columns which identify a unique assessment or processing pipeline.
+
+    When there is only one relevant column, we return a string instead of a list to avoid grouper problems when the column name is used in pandas groupby.
+    """
     if schema == "imaging":
         return ["pipeline_name", "pipeline_version"]
     if schema == "phenotypic":
         return (
             ["assessment_name", "assessment_version"]
             if "assessment_version" in bagel.columns
-            else ["assessment_name"]
+            else "assessment_name"
         )
+    return None
 
 
 def extract_pipelines(bagel: pd.DataFrame, schema: str) -> dict:
@@ -226,7 +231,7 @@ def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
         dropna=True,
     )
 
-    if len(get_event_id_columns(bagel, schema)) > 0:
+    if isinstance(get_event_id_columns(bagel, schema), list):
         pipeline_complete_df.columns = [
             # for neatness, rename pipeline-specific columns from "(name, version)" to "{name}-{version}"
             "-".join(tup)
@@ -281,8 +286,10 @@ def get_schema_validation_errors(
 
     # Get the columns that uniquely identify a participant-session's value for an event,
     # to be able to check for duplicate entries before transforming the data to wide format later on
-    unique_value_id_columns = get_id_columns(bagel) + get_event_id_columns(
-        bagel, schema
+    unique_value_id_columns = get_id_columns(bagel) + (
+        get_event_id_columns(bagel, schema)
+        if isinstance(get_event_id_columns(bagel, schema), list)
+        else [get_event_id_columns(bagel, schema)]
     )
 
     if (
