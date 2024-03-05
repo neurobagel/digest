@@ -171,6 +171,8 @@ def get_id_columns(data: pd.DataFrame) -> list:
     )
 
 
+# TODO: Consider replacing with a check for duplicate participant/session/event combinations,
+# which should emit a warning if found
 def are_subjects_same_across_pipelines(
     bagel: pd.DataFrame, schema: str
 ) -> bool:
@@ -207,13 +209,17 @@ def count_unique_records(data: pd.DataFrame) -> int:
 
 def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
     """
-    Constructs a dataframe containing global statuses of pipelines in bagel.csv
-    (based on "pipeline_complete" column) for each participant and session.
+    Constructs a wide format dataframe from the long format input file,
+    with one row per participant-session pair and one column per event (e.g., pipeline, assessment)
     """
-    pipeline_complete_df = bagel.pivot(
+    # When there are duplicate entries for the combination of participant, session, & event, the first occurrence is kept
+    pipeline_complete_df = bagel.pivot_table(
         index=get_id_columns(bagel),
         columns=get_event_id_columns(bagel, schema),
         values=BAGEL_CONFIG[schema]["overview_col"],
+        aggfunc="first",
+        fill_value=None,  # TODO: Check if default value makes sense
+        dropna=True,
     )
 
     if isinstance(get_event_id_columns(bagel, schema), list):
@@ -278,8 +284,8 @@ def get_schema_validation_errors(
         > 0
     ):
         error_msg = f"The selected CSV is missing the following required {schema} metadata columns: {missing_req_cols}. Please try again."
-    elif not are_subjects_same_across_pipelines(bagel, schema):
-        error_msg = "The pipelines in the selected CSV do not have the same number of subjects and sessions. Please try again."
+    # elif not are_subjects_same_across_pipelines(bagel, schema):
+    #     error_msg = "The pipelines in the selected CSV do not have the same number of subjects and sessions. Please try again."
 
     return error_msg
 
