@@ -2,7 +2,7 @@ import base64
 import io
 import json
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -117,15 +117,15 @@ def get_missing_required_columns(bagel: pd.DataFrame, schema_file: str) -> set:
     )
 
 
-def get_event_id_columns(bagel: pd.DataFrame, schema: str) -> Union[list, str]:
+def get_event_id_columns(bagel: pd.DataFrame, schema: str) -> list:
     """Returns names of columns which identify a unique assessment or processing pipeline."""
     if schema == "imaging":
         return ["pipeline_name", "pipeline_version"]
-    elif schema == "phenotypic":
+    if schema == "phenotypic":
         return (
             ["assessment_name", "assessment_version"]
             if "assessment_version" in bagel.columns
-            else "assessment_name"
+            else ["assessment_name"]
         )
 
 
@@ -171,8 +171,12 @@ def get_id_columns(data: pd.DataFrame) -> list:
     )
 
 
-# TODO: Consider replacing with a check for duplicate participant/session/event combinations,
-# which should emit a warning if found
+def get_duplicate_entries(data: pd.DataFrame, subset: list) -> pd.DataFrame:
+    """Returns a dataframe containing only duplicate entries in the input data."""
+    return data[data.duplicated(subset=subset, keep=False)]
+
+
+# TODO: Remove as function is no longer used
 def are_subjects_same_across_pipelines(
     bagel: pd.DataFrame, schema: str
 ) -> bool:
@@ -222,7 +226,7 @@ def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
         dropna=True,
     )
 
-    if isinstance(get_event_id_columns(bagel, schema), list):
+    if len(get_event_id_columns(bagel, schema)) > 0:
         pipeline_complete_df.columns = [
             # for neatness, rename pipeline-specific columns from "(name, version)" to "{name}-{version}"
             "-".join(tup)
@@ -275,6 +279,12 @@ def get_schema_validation_errors(
     """Checks that the input CSV adheres to the schema for the selected bagel type. If not, returns an informative error message as a string."""
     error_msg = None
 
+    # Get the columns that uniquely identify a participant-session's value for an event,
+    # to be able to check for duplicate entries before transforming the data to wide format later on
+    unique_value_id_columns = get_id_columns(bagel) + get_event_id_columns(
+        bagel, schema
+    )
+
     if (
         len(
             missing_req_cols := get_missing_required_columns(
@@ -284,8 +294,14 @@ def get_schema_validation_errors(
         > 0
     ):
         error_msg = f"The selected CSV is missing the following required {schema} metadata columns: {missing_req_cols}. Please try again."
-    # elif not are_subjects_same_across_pipelines(bagel, schema):
-    #     error_msg = "The pipelines in the selected CSV do not have the same number of subjects and sessions. Please try again."
+    elif (
+        get_duplicate_entries(
+            data=bagel, subset=unique_value_id_columns
+        ).shape[0]
+        > 0
+    ):
+        # TODO: Switch to warning once toasts are enabled?
+        error_msg = f"The selected CSV contains duplicate entries across the following columns: {unique_value_id_columns}. Please try again."
 
     return error_msg
 
