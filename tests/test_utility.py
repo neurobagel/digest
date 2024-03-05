@@ -61,6 +61,75 @@ def test_wrap_df_column_values():
 
 
 @pytest.mark.parametrize(
+    "original_df,duplicates_df",
+    [
+        (
+            pd.DataFrame(
+                {
+                    "participant_id": ["sub-1", "sub-1", "sub-2", "sub-2"],
+                    "session": [1, 2, 1, 2],
+                    "assessment_name": ["moca", "moca", "moca", "moca"],
+                    "assessment_score": [21.0, 24.0, np.nan, 24.0],
+                }
+            ),
+            # Have to specify column dtypes as well because the df will otherwise not evaluate as equal to an empty subset of above df
+            pd.DataFrame(
+                {
+                    "participant_id": pd.Series([], dtype="object"),
+                    "session": pd.Series([], dtype="int64"),
+                    "assessment_name": pd.Series([], dtype="object"),
+                    "assessment_score": pd.Series([], dtype="float64"),
+                }
+            ),
+        ),
+        (
+            pd.DataFrame(
+                {
+                    "participant_id": ["sub-1", "sub-1", "sub-2", "sub-2"],
+                    "session": [1, 1, 1, 2],
+                    "assessment_name": ["moca", "moca", "moca", "moca"],
+                    "assessment_score": [21.0, 24.0, np.nan, 24.0],
+                }
+            ),
+            pd.DataFrame(
+                {
+                    "participant_id": ["sub-1", "sub-1"],
+                    "session": [1, 1],
+                    "assessment_name": ["moca", "moca"],
+                    "assessment_score": [21.0, 24.0],
+                }
+            ),
+        ),
+        (
+            pd.DataFrame(
+                {
+                    "participant_id": ["sub-1", "sub-1", "sub-2", "sub-2"],
+                    "session": [np.nan, np.nan, 1, 2],
+                    "assessment_name": ["moca", "moca", "moca", "moca"],
+                    "assessment_score": [21.0, 24.0, np.nan, 24.0],
+                }
+            ),
+            pd.DataFrame(
+                {
+                    "participant_id": ["sub-1", "sub-1"],
+                    "session": [np.nan, np.nan],
+                    "assessment_name": ["moca", "moca"],
+                    "assessment_score": [21.0, 24.0],
+                }
+            ),
+        ),
+    ],
+)
+def test_get_duplicate_entries(original_df, duplicates_df):
+    """Test that get_duplicate_entries() returns a dataframe containing the duplicate entries in a given dataframe."""
+
+    unique_value_id_columns = ["participant_id", "session", "assessment_name"]
+    assert util.get_duplicate_entries(
+        data=original_df, subset=unique_value_id_columns
+    ).equals(duplicates_df)
+
+
+@pytest.mark.parametrize(
     "column,nonmissing,missing,stats",
     [
         ("group", "3/3", "0/3", ["unique values", "most common value"]),
