@@ -181,26 +181,6 @@ def get_duplicate_entries(data: pd.DataFrame, subset: list) -> pd.DataFrame:
     return data[data.duplicated(subset=subset, keep=False)]
 
 
-# TODO: Remove as function is no longer used
-def are_subjects_same_across_pipelines(
-    bagel: pd.DataFrame, schema: str
-) -> bool:
-    """Checks if subjects and sessions are the same across pipelines in the input."""
-    pipelines_dict = extract_pipelines(bagel, schema)
-
-    pipeline_subject_sessions = []
-    for df in pipelines_dict.values():
-        # per pipeline, rows are sorted first in case participants/sessions are out of order
-        pipeline_subject_sessions.append(
-            df.sort_values(get_id_columns(bagel)).loc[:, get_id_columns(bagel)]
-        )
-
-    return all(
-        pipeline.equals(pipeline_subject_sessions[0])
-        for pipeline in pipeline_subject_sessions
-    )
-
-
 def count_unique_subjects(data: pd.DataFrame) -> int:
     return (
         data["participant_id"].nunique()
