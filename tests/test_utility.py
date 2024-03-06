@@ -20,46 +20,6 @@ def test_invalid_filetype_returns_informative_error(filename):
     assert "Invalid file type" in upload_error
 
 
-def test_reset_column_dtypes():
-    """
-    Test that reset_column_dtypes() infers more appropriate dtypes for columns whose values were erroneously stored as strings,
-    and that the 'session' column is always converted to strings (object dtype).
-    """
-    pheno_overview_df = pd.DataFrame(
-        {
-            "participant_id": ["sub-1", "sub-2", "sub-3"],
-            "session": [1, 1, 1],
-            "group": ["PD", "PD", "PD"],
-            "moca_total": ["21", "24", np.nan],
-            "moca_total_status": ["true", "true", "false"],
-        }
-    )
-
-    pheno_overview_df_retyped = util.reset_column_dtypes(pheno_overview_df)
-
-    assert pheno_overview_df_retyped["participant_id"].dtype == "object"
-    assert pheno_overview_df_retyped["session"].dtype == "object"
-    assert pheno_overview_df_retyped["group"].dtype == "object"
-    assert pheno_overview_df_retyped["moca_total"].dtype == "float64"
-    assert pheno_overview_df_retyped["moca_total_status"].dtype == "bool"
-
-
-def test_wrap_df_column_values():
-    """Test that wrap_df_column_values() wraps values of a column which are longer than the specified length."""
-    df = pd.DataFrame(
-        {
-            "updrs_p3_hy": [
-                "Stage 0: Asymptomatic",
-                "Stage 1: Unilateral involvement only",
-                "Stage 2: Bilateral involvement without impairment of balance",
-            ]
-        }
-    )
-    wrapped_df = plot.wrap_df_column_values(df, "updrs_p3_hy", 30)
-    assert all("<br>" in value for value in wrapped_df["updrs_p3_hy"][1:3])
-    assert "<br>" not in wrapped_df["updrs_p3_hy"][0]
-
-
 @pytest.mark.parametrize(
     "original_df,duplicates_df",
     [
@@ -127,6 +87,103 @@ def test_get_duplicate_entries(original_df, duplicates_df):
     assert util.get_duplicate_entries(
         data=original_df, subset=unique_value_id_columns
     ).equals(duplicates_df)
+
+
+@pytest.mark.parametrize(
+    "bagel_path,schema,expected_columns,expected_n_records",
+    [
+        (
+            "example_mismatch-subs_bagel.csv",
+            "imaging",
+            [
+                "participant_id",
+                "session",
+                "fmriprep-20.2.7",
+                "freesurfer-6.0.1",
+                "freesurfer-7.3.2",
+            ],
+            6,
+        ),
+        (
+            "example_imaging_bagel.csv",
+            "imaging",
+            [
+                "participant_id",
+                "bids_id",
+                "session",
+                "fmriprep-20.2.7",
+                "freesurfer-6.0.1",
+                "freesurfer-7.3.2",
+            ],
+            7,
+        ),
+        (
+            "example_pheno_bagel.csv",
+            "phenotypic",
+            [
+                "participant_id",
+                "bids_id",
+                "session",
+                "group",
+                "moca_total",
+                "updrs_3_total",
+            ],
+            7,
+        ),
+    ],
+)
+def test_get_pipelines_overview(
+    bagels_path, bagel_path, schema, expected_columns, expected_n_records
+):
+    """
+    Smoke test that get_pipelines_overview() returns a dataframe with the expected columns and number of participant-session rows
+    after reshaping data into a wide format.
+    """
+    bagel = pd.read_csv(bagels_path / bagel_path)
+    overview_df = util.get_pipelines_overview(bagel=bagel, schema=schema)
+
+    assert overview_df.columns.tolist() == expected_columns
+    assert len(overview_df) == expected_n_records
+
+
+def test_reset_column_dtypes():
+    """
+    Test that reset_column_dtypes() infers more appropriate dtypes for columns whose values were erroneously stored as strings,
+    and that the 'session' column is always converted to strings (object dtype).
+    """
+    pheno_overview_df = pd.DataFrame(
+        {
+            "participant_id": ["sub-1", "sub-2", "sub-3"],
+            "session": [1, 1, 1],
+            "group": ["PD", "PD", "PD"],
+            "moca_total": ["21", "24", np.nan],
+            "moca_total_status": ["true", "true", "false"],
+        }
+    )
+
+    pheno_overview_df_retyped = util.reset_column_dtypes(pheno_overview_df)
+
+    assert pheno_overview_df_retyped["participant_id"].dtype == "object"
+    assert pheno_overview_df_retyped["session"].dtype == "object"
+    assert pheno_overview_df_retyped["group"].dtype == "object"
+    assert pheno_overview_df_retyped["moca_total"].dtype == "float64"
+    assert pheno_overview_df_retyped["moca_total_status"].dtype == "bool"
+
+
+def test_wrap_df_column_values():
+    """Test that wrap_df_column_values() wraps values of a column which are longer than the specified length."""
+    df = pd.DataFrame(
+        {
+            "updrs_p3_hy": [
+                "Stage 0: Asymptomatic",
+                "Stage 1: Unilateral involvement only",
+                "Stage 2: Bilateral involvement without impairment of balance",
+            ]
+        }
+    )
+    wrapped_df = plot.wrap_df_column_values(df, "updrs_p3_hy", 30)
+    assert all("<br>" in value for value in wrapped_df["updrs_p3_hy"][1:3])
+    assert "<br>" not in wrapped_df["updrs_p3_hy"][0]
 
 
 @pytest.mark.parametrize(
