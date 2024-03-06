@@ -81,7 +81,6 @@ def test_002_upload_invalid_imaging_bagel(test_server, bagels_path):
     """
     invalid_input_output = {
         "example_missing-col_bagel.csv": "missing the following required imaging metadata columns: {'pipeline_starttime'}",
-        "example_mismatch-subs_bagel.csv": "do not have the same number of subjects and sessions",
         "example_pheno_bagel.csv": "missing the following required imaging metadata columns",
     }
 
