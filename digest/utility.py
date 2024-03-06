@@ -207,7 +207,7 @@ def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
         columns=get_event_id_columns(bagel, schema),
         values=BAGEL_CONFIG[schema]["overview_col"],
         aggfunc="first",
-        fill_value=None,  # TODO: Check if default value makes sense
+        fill_value=None,  # TODO: Revisit this when we have an idea for a better fill value
         dropna=True,
     )
 
