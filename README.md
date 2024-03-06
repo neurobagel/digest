@@ -55,12 +55,6 @@ Once the server is running, the dashboard can be accessed at http://127.0.0.1:80
 ### Testing
 `pytest` and `dash.testing` are used for testing dashboard functionality during development.
 
-To run the tests, first install a WebDriver for the Dash app tests to interact with a Chrome browser, following the [ChromeDriver Getting Started Guide](https://chromedriver.chromium.org/getting-started). Once you have downloaded the correct ChromeDriver binary for your installed version of Chrome, add the location to your PATH by running the following command:
-```bash
-export PATH=$PATH:/path/to/your/folder/containing/ChromeDriver
-```
-You may have to repeat this step each time your Python environment is re-activated.
-
 To run the tests, run the following command from the repository's root:
 ```bash
 pytest tests
