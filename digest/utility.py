@@ -117,7 +117,9 @@ def get_missing_required_columns(bagel: pd.DataFrame, schema_file: str) -> set:
     )
 
 
-def get_event_id_columns(bagel: pd.DataFrame, schema: str) -> Union[str, list]:
+def get_event_id_columns(
+    bagel: pd.DataFrame, schema: str
+) -> Union[str, list, None]:
     """
     Returns name(s) of columns which identify a unique assessment or processing pipeline.
 
@@ -177,7 +179,7 @@ def get_id_columns(data: pd.DataFrame) -> list:
 
 
 def get_duplicate_entries(data: pd.DataFrame, subset: list) -> pd.DataFrame:
-    """Returns a dataframe containing only duplicate entries in the input data."""
+    """Returns a dataframe containing all duplicate entries in the input data."""
     return data[data.duplicated(subset=subset, keep=False)]
 
 
