@@ -78,6 +78,25 @@ def test_invalid_filetype_returns_informative_error(filename):
                 }
             ),
         ),
+        # TODO: Revisit this example when we want to handle NaN values in identifier columns differently (e.g., see https://github.com/neurobagel/digest/issues/20)
+        (
+            pd.DataFrame(
+                {
+                    "participant_id": ["sub-1", "sub-1", "sub-2", "sub-2"],
+                    "session": [1, np.nan, 1, 2],
+                    "assessment_name": ["moca", "moca", "moca", "moca"],
+                    "assessment_score": [21.0, 24.0, np.nan, 24.0],
+                }
+            ),
+            pd.DataFrame(
+                {
+                    "participant_id": pd.Series([], dtype="object"),
+                    "session": pd.Series([], dtype="float64"),
+                    "assessment_name": pd.Series([], dtype="object"),
+                    "assessment_score": pd.Series([], dtype="float64"),
+                }
+            ),
+        ),
     ],
 )
 def test_get_duplicate_entries(original_df, duplicates_df):
@@ -140,10 +159,81 @@ def test_get_pipelines_overview(
     after reshaping data into a wide format.
     """
     bagel = pd.read_csv(bagels_path / bagel_path)
+    bagel["session"] = bagel["session"].astype(str)
     overview_df = util.get_pipelines_overview(bagel=bagel, schema=schema)
 
     assert overview_df.columns.tolist() == expected_columns
     assert len(overview_df) == expected_n_records
+
+
+@pytest.mark.parametrize(
+    "bagel,expected_overview_df",
+    [
+        (
+            # TODO: Update once https://github.com/neurobagel/digest/issues/20 is addressed
+            pd.DataFrame(
+                {
+                    "participant_id": ["sub-1", "sub-1", "sub-2", "sub-2"],
+                    "session": [1, np.nan, 1, 2],
+                    "assessment_name": ["moca", "moca", "moca", "moca"],
+                    "assessment_score": [21.0, 24.0, np.nan, 24.0],
+                }
+            ),
+            pd.DataFrame(
+                {
+                    "participant_id": ["sub-1", "sub-1", "sub-2", "sub-2"],
+                    "session": ["1.0", "nan", "1.0", "2.0"],
+                    "moca": [21.0, 24.0, np.nan, 24.0],
+                }
+            ),
+        ),
+        (
+            # This example also provides a test that original session order is preserved
+            pd.DataFrame(
+                {
+                    "participant_id": [
+                        "sub-1",
+                        "sub-1",
+                        "sub-1",
+                        "sub-1",
+                        "sub-1",
+                    ],
+                    "session": [
+                        "intake",
+                        "baseline",
+                        "follow-up",
+                        "intake",
+                        "baseline",
+                    ],
+                    "assessment_name": [
+                        "moca",
+                        "moca",
+                        "moca",
+                        "updrs",
+                        "updrs",
+                    ],
+                    "assessment_score": [np.nan, 24.0, np.nan, 12, 12],
+                }
+            ),
+            pd.DataFrame(
+                {
+                    "participant_id": ["sub-1", "sub-1", "sub-1"],
+                    "session": ["intake", "baseline", "follow-up"],
+                    "moca": [np.nan, 24.0, np.nan],
+                    "updrs": [12.0, 12.0, np.nan],
+                }
+            ),
+        ),
+    ],
+)
+def test_get_pipelines_overview_handles_nan_correctly(
+    bagel, expected_overview_df
+):
+    """Test that get_pipelines_overview() handles NaN values in the original long-format data as expected."""
+    bagel["session"] = bagel["session"].astype(str)
+    overview_df = util.get_pipelines_overview(bagel=bagel, schema="phenotypic")
+
+    assert overview_df.equals(expected_overview_df), overview_df
 
 
 def test_reset_column_dtypes():
