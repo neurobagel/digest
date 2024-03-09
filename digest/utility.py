@@ -203,14 +203,17 @@ def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
     Constructs a wide format dataframe from the long format input file,
     with one row per participant-session pair and one column per event (e.g., pipeline, assessment)
     """
-    # When there are duplicate entries for the combination of participant, session, & event, the first occurrence is kept
-    pipeline_complete_df = bagel.pivot_table(
+    # NOTE: pd.pivot_table has more flexibility in terms of replacing all NaN values in the pivotted table and handling duplicate entries (not really needed in our case),
+    # but has known issues where it silently drops NaNs, regardless of the dropna parameter value.
+    # For now we don't need the extra flexibility, so we use the simpler pd.pivot instead.
+    #
+    # Related issues:
+    # https://github.com/pandas-dev/pandas/issues/21969
+    # https://github.com/pandas-dev/pandas/issues/17595
+    pipeline_complete_df = bagel.pivot(
         index=get_id_columns(bagel),
         columns=get_event_id_columns(bagel, schema),
         values=BAGEL_CONFIG[schema]["overview_col"],
-        aggfunc="first",
-        fill_value=None,  # TODO: Revisit this when we have an idea for a better fill value
-        dropna=True,
     )
 
     if isinstance(get_event_id_columns(bagel, schema), list):
@@ -225,6 +228,8 @@ def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
 
     pipeline_complete_df = (
         # Enforce original order of sessions as they appear in input (pivot automatically sorts them)
+        #   NOTE: .reindex only works correctly when there are no NaN values in the index level
+        #   (Here, the entire "session" column should have already been cast to a string)
         pipeline_complete_df.reindex(
             index=bagel["session"].unique(), level="session"
         )
