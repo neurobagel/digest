@@ -117,16 +117,23 @@ def get_missing_required_columns(bagel: pd.DataFrame, schema_file: str) -> set:
     )
 
 
-def get_event_id_columns(bagel: pd.DataFrame, schema: str) -> Union[list, str]:
-    """Returns names of columns which identify a unique assessment or processing pipeline."""
+def get_event_id_columns(
+    bagel: pd.DataFrame, schema: str
+) -> Union[str, list, None]:
+    """
+    Returns name(s) of columns which identify a unique assessment or processing pipeline.
+
+    When there is only one relevant column, we return a string instead of a list to avoid grouper problems when the column name is used in pandas groupby.
+    """
     if schema == "imaging":
         return ["pipeline_name", "pipeline_version"]
-    elif schema == "phenotypic":
+    if schema == "phenotypic":
         return (
             ["assessment_name", "assessment_version"]
             if "assessment_version" in bagel.columns
             else "assessment_name"
         )
+    return None
 
 
 def extract_pipelines(bagel: pd.DataFrame, schema: str) -> dict:
@@ -171,23 +178,9 @@ def get_id_columns(data: pd.DataFrame) -> list:
     )
 
 
-def are_subjects_same_across_pipelines(
-    bagel: pd.DataFrame, schema: str
-) -> bool:
-    """Checks if subjects and sessions are the same across pipelines in the input."""
-    pipelines_dict = extract_pipelines(bagel, schema)
-
-    pipeline_subject_sessions = []
-    for df in pipelines_dict.values():
-        # per pipeline, rows are sorted first in case participants/sessions are out of order
-        pipeline_subject_sessions.append(
-            df.sort_values(get_id_columns(bagel)).loc[:, get_id_columns(bagel)]
-        )
-
-    return all(
-        pipeline.equals(pipeline_subject_sessions[0])
-        for pipeline in pipeline_subject_sessions
-    )
+def get_duplicate_entries(data: pd.DataFrame, subset: list) -> pd.DataFrame:
+    """Returns a dataframe containing all duplicate entries in the input data."""
+    return data[data.duplicated(subset=subset, keep=False)]
 
 
 def count_unique_subjects(data: pd.DataFrame) -> int:
@@ -207,9 +200,16 @@ def count_unique_records(data: pd.DataFrame) -> int:
 
 def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
     """
-    Constructs a dataframe containing global statuses of pipelines in bagel.csv
-    (based on "pipeline_complete" column) for each participant and session.
+    Constructs a wide format dataframe from the long format input file,
+    with one row per participant-session pair and one column per event (e.g., pipeline, assessment)
     """
+    # NOTE: pd.pivot_table has more flexibility in terms of replacing all NaN values in the pivotted table and handling duplicate entries (not really needed in our case),
+    # but has known issues where it silently drops NaNs, regardless of the dropna parameter value.
+    # For now we don't need the extra flexibility, so we use the simpler pd.pivot instead.
+    #
+    # Related issues:
+    # https://github.com/pandas-dev/pandas/issues/21969
+    # https://github.com/pandas-dev/pandas/issues/17595
     pipeline_complete_df = bagel.pivot(
         index=get_id_columns(bagel),
         columns=get_event_id_columns(bagel, schema),
@@ -228,6 +228,8 @@ def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
 
     pipeline_complete_df = (
         # Enforce original order of sessions as they appear in input (pivot automatically sorts them)
+        #   NOTE: .reindex only works correctly when there are no NaN values in the index level
+        #   (Here, the entire "session" column should have already been cast to a string)
         pipeline_complete_df.reindex(
             index=bagel["session"].unique(), level="session"
         )
@@ -269,6 +271,14 @@ def get_schema_validation_errors(
     """Checks that the input CSV adheres to the schema for the selected bagel type. If not, returns an informative error message as a string."""
     error_msg = None
 
+    # Get the columns that uniquely identify a participant-session's value for an event,
+    # to be able to check for duplicate entries before transforming the data to wide format later on
+    unique_value_id_columns = get_id_columns(bagel) + (
+        get_event_id_columns(bagel, schema)
+        if isinstance(get_event_id_columns(bagel, schema), list)
+        else [get_event_id_columns(bagel, schema)]
+    )
+
     if (
         len(
             missing_req_cols := get_missing_required_columns(
@@ -278,8 +288,14 @@ def get_schema_validation_errors(
         > 0
     ):
         error_msg = f"The selected CSV is missing the following required {schema} metadata columns: {missing_req_cols}. Please try again."
-    elif not are_subjects_same_across_pipelines(bagel, schema):
-        error_msg = "The pipelines in the selected CSV do not have the same number of subjects and sessions. Please try again."
+    elif (
+        get_duplicate_entries(
+            data=bagel, subset=unique_value_id_columns
+        ).shape[0]
+        > 0
+    ):
+        # TODO: Switch to warning once alerts are implemented for errors?
+        error_msg = f"The selected CSV contains duplicate entries in the combination of: {unique_value_id_columns}. Please double check your input."
 
     return error_msg
 

@@ -151,6 +151,12 @@ def process_bagel(upload_contents, available_digest_nclicks, filenames):
             )
             is None
         ):
+            # Convert session column to string so numeric labels are not treated as numbers
+            #
+            # TODO: Any existing NaNs will currently be turned into "nan". (See open issue https://github.com/pandas-dev/pandas/issues/25353)
+            # Another side effect of allowing NaN sessions is that if this column has integer values, they will be read in as floats
+            # (before being converted to str) if there are NaNs in the column.
+            # This should not be a problem after we disallow NaNs value in "participant_id" and "session" columns, https://github.com/neurobagel/digest/issues/20
             bagel["session"] = bagel["session"].astype(str)
             session_list = bagel["session"].unique().tolist()
 
