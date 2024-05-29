@@ -59,7 +59,7 @@ def toggle_dataset_name_dialog(
             return not dialog_is_open, DEFAULT_DATASET_NAME, None
 
         # If the user loaded a preset file, do not open the dataset name modal, and get the name of the dataset
-        # from the preset dataset dictionary insteaad, based on the matching filename.
+        # from the preset dataset dictionary instead, based on the matching filename.
         for available_dataset in util.PUBLIC_DIGEST_FILE_PATHS.values():
             relevant_digest_path = available_dataset.get(
                 parsed_data.get("type")
