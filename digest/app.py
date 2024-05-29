@@ -15,7 +15,9 @@ from .layout import DEFAULT_DATASET_NAME, construct_layout, upload_buttons
 EMPTY_FIGURE_PROPS = {"data": [], "layout": {}, "frames": []}
 
 app = Dash(
-    __name__, external_stylesheets=[dbc.themes.FLATLY, dbc.icons.BOOTSTRAP]
+    __name__,
+    external_stylesheets=[dbc.themes.FLATLY, dbc.icons.BOOTSTRAP],
+    title="Digest",
 )
 server = app.server
 
@@ -35,19 +37,60 @@ app.layout = construct_layout()
     [
         State("dataset-name-modal", "is_open"),
         State("dataset-name-input", "value"),
+        State("was-upload-used", "data"),
+        State("memory-filename", "data"),
     ],
     prevent_initial_call=True,
 )
 def toggle_dataset_name_dialog(
-    parsed_data, submit_clicks, is_open, name_value
+    parsed_data,
+    dialog_submit_clicks,
+    dialog_is_open,
+    name_input_value,
+    was_upload_used,
+    filename,
 ):
     """Toggles a popup window for user to enter a dataset name when the data store changes."""
     if parsed_data is not None:
-        if name_value not in [None, ""]:
-            return not is_open, name_value, None
-        return not is_open, DEFAULT_DATASET_NAME, None
+        if was_upload_used:
+            # If a non-empty name was entered in the modal, use it. Otherwise, use a default name.
+            if name_input_value not in [None, ""]:
+                return not dialog_is_open, name_input_value, None
+            return not dialog_is_open, DEFAULT_DATASET_NAME, None
 
-    return is_open, None, None
+        # If the user loaded a preset file, do not open the dataset name modal, and get the name of the dataset
+        # from the preset dataset dictionary insteaad, based on the matching filename.
+        for available_dataset in util.PUBLIC_DIGEST_FILE_PATHS.values():
+            relevant_digest_path = available_dataset.get(
+                parsed_data.get("type")
+            )
+            if relevant_digest_path.name == filename:
+                dataset_name = available_dataset.get(
+                    "name", DEFAULT_DATASET_NAME
+                )
+                return False, dataset_name, None
+
+    return dialog_is_open, None, None
+
+
+@app.callback(
+    Output("was-upload-used", "data"),
+    [
+        Input(
+            {"type": "upload-data", "index": ALL, "btn_idx": ALL}, "contents"
+        ),
+        Input(
+            {"type": "load-available-digest", "index": ALL, "dataset": ALL},
+            "n_clicks",
+        ),
+    ],
+    prevent_initial_call=True,
+)
+def set_was_upload_used_flag(upload_contents, available_digest_nclicks):
+    """Set a flag to indicate whether the user uploaded a new file or loaded a public digest."""
+    if ctx.triggered_id.type == "upload-data":
+        return True
+    return False
 
 
 @app.callback(
@@ -59,31 +102,68 @@ def toggle_dataset_name_dialog(
         Output("upload-message", "children"),
         Output("interactive-datatable", "export_format"),
     ],
-    Input({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "contents"),
+    [
+        Input(
+            {"type": "upload-data", "index": ALL, "btn_idx": ALL}, "contents"
+        ),
+        Input(
+            {"type": "load-available-digest", "index": ALL, "dataset": ALL},
+            "n_clicks",
+        ),
+    ],
     State({"type": "upload-data", "index": ALL, "btn_idx": ALL}, "filename"),
     prevent_initial_call=True,
 )
-def process_bagel(contents, filenames):
+def process_bagel(upload_contents, available_digest_nclicks, filenames):
     """
     From the contents of a correctly-formatted uploaded .csv file, parse and store (1) the pipeline overview data as a dataframe,
     and (2) pipeline-specific metadata as individual dataframes within a dict.
     Returns any errors encountered during input file processing as a user-friendly message.
     """
-    filename = filenames[ctx.triggered_id.btn_idx]
-    try:
-        bagel, upload_error = util.parse_csv_contents(
-            contents=ctx.triggered[0]["value"],
-            filename=filename,
-            schema=ctx.triggered_id.index,
+    bagel = None
+    # Instead of raising errors in the console, store them in informative strings to be displayed in the UI
+    upload_error = None
+
+    # Get the schema type for the selected digest file ("imaging" or "phenotypic") from the ID of the triggered input component
+    schema = ctx.triggered_id.index
+    if ctx.triggered_id.type == "upload-data":
+        filename = filenames[ctx.triggered_id.btn_idx]
+        bagel, upload_error = util.load_file_from_contents(
+            filename=filename, contents=ctx.triggered[0]["value"]
         )
-        if upload_error is None:
+    else:
+        filepath = util.PUBLIC_DIGEST_FILE_PATHS[ctx.triggered_id.dataset][
+            schema
+        ]
+        filename = filepath.name
+        bagel, upload_error = util.load_file_from_path(filepath)
+
+    # The below try-except block is used to catch any errors raised during internal reformatting
+    # of the loaded dataframe which are not caught by the schema validation.
+    # This is so any unhandled errors still produce a generic user-friendly (but generic) message in the UI.
+    try:
+        if (
+            bagel is not None
+            and (
+                upload_error := util.get_schema_validation_errors(
+                    bagel, schema
+                )
+            )
+            is None
+        ):
+            # Convert session column to string so numeric labels are not treated as numbers
+            #
+            # TODO: Any existing NaNs will currently be turned into "nan". (See open issue https://github.com/pandas-dev/pandas/issues/25353)
+            # Another side effect of allowing NaN sessions is that if this column has integer values, they will be read in as floats
+            # (before being converted to str) if there are NaNs in the column.
+            # This should not be a problem after we disallow NaNs value in "participant_id" and "session" columns, https://github.com/neurobagel/digest/issues/20
+            bagel["session"] = bagel["session"].astype(str)
             session_list = bagel["session"].unique().tolist()
+
             overview_df = util.get_pipelines_overview(
-                bagel=bagel, schema=ctx.triggered_id.index
+                bagel=bagel, schema=schema
             )
-            pipelines_dict = util.extract_pipelines(
-                bagel=bagel, schema=ctx.triggered_id.index
-            )
+            pipelines_dict = util.extract_pipelines(bagel=bagel, schema=schema)
     except Exception as exc:
         print(exc)  # for debugging
         upload_error = "Something went wrong while processing this file."
@@ -105,10 +185,7 @@ def process_bagel(contents, filenames):
     return (
         filename,
         session_list,
-        {
-            "type": ctx.triggered_id.index,
-            "data": overview_df.to_dict("records"),
-        },
+        {"type": schema, "data": overview_df.to_dict("records")},
         pipelines_dict,
         None,
         "csv",
@@ -153,6 +230,40 @@ def display_dataset_metadata(parsed_data):
         {"display": "block"},
         f"Total number of columns: {len(overview_df.columns)}",
     )
+
+
+@app.callback(
+    Output("filtering-syntax-help", "style"),
+    Input("memory-overview", "data"),
+    prevent_initial_call=True,
+)
+def display_filtering_syntax_help(parsed_data):
+    """When successfully uploaded data changes, show collapsible help text for datatable filtering syntax."""
+    if parsed_data is None:
+        return {"display": "none"}
+    return {"display": "block"}
+
+
+@app.callback(
+    [
+        Output("filtering-syntax-help-collapse", "is_open"),
+        Output("filtering-syntax-help-icon", "className"),
+    ],
+    Input("filtering-syntax-help-button", "n_clicks"),
+    [
+        State("filtering-syntax-help-collapse", "is_open"),
+        State("filtering-syntax-help-icon", "className"),
+    ],
+    prevent_initial_call=True,
+)
+def toggle_filtering_syntax_collapse_content(n_clicks, is_open, class_name):
+    """When filtering syntax help button is clicked, toggle visibility of the help text."""
+    if n_clicks:
+        if class_name == "bi bi-caret-right-fill me-1":
+            return not is_open, "bi bi-caret-down-fill me-1"
+        return not is_open, "bi bi-caret-right-fill me-1"
+
+    return is_open, class_name
 
 
 @app.callback(
@@ -251,7 +362,13 @@ def update_outputs(
             status_values=pipeline_selected_filters,
         )
     tbl_columns = [
-        {"name": i, "id": i, "hideable": True} for i in data.columns
+        {
+            "name": i,
+            "id": i,
+            "hideable": True,
+            "type": util.type_column_for_dashtable(data[i]),
+        }
+        for i in data.columns
     ]
     tbl_data = data.to_dict("records")
 
@@ -447,6 +564,7 @@ def plot_phenotypic_column(
 @app.callback(
     [
         Output("column-summary-title", "children"),
+        Output("column-data-type", "children"),
         Output("column-summary", "children"),
         Output("column-summary-card", "style"),
     ],
@@ -454,20 +572,36 @@ def plot_phenotypic_column(
         Input("phenotypic-column-plotting-dropdown", "value"),
         Input("interactive-datatable", "derived_virtual_data"),
     ],
-    State("memory-overview", "data"),
+    [
+        State("memory-overview", "data"),
+        State("interactive-datatable", "columns"),
+    ],
     prevent_initial_call=True,
 )
 def generate_column_summary(
-    selected_column: str, virtual_data: list, parsed_data: dict
+    selected_column: str,
+    virtual_data: list,
+    parsed_data: dict,
+    datatable_columns: list,
 ):
     """When a column is selected from the dropdown, generate summary stats of the column values."""
     if selected_column is None or parsed_data.get("type") != "phenotypic":
-        return None, None, {"display": "none"}
+        return None, None, None, {"display": "none"}
+
+    column_datatype = next(
+        (
+            column.get("type", None)
+            for column in datatable_columns
+            if column["name"] == selected_column
+        ),
+        None,
+    )
 
     # If no data is visible in the datatable (i.e., zero matches), return an informative message
     if not virtual_data:
         return (
             selected_column,
+            column_datatype,
             html.I("No matching records available to compute value summary"),
             {"display": "block"},
         )
@@ -475,6 +609,7 @@ def generate_column_summary(
     column_data = pd.DataFrame.from_dict(virtual_data)[selected_column]
     return (
         selected_column,
+        column_datatype,
         util.generate_column_summary_str(column_data),
         {"display": "block"},
     )
@@ -494,4 +629,4 @@ def display_session_switch(selected_column: str):
 
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run(debug=True)

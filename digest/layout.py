@@ -21,6 +21,15 @@ def navbar():
         target="_blank",
     )
 
+    example_inputs = dbc.NavLink(
+        children=[
+            html.I(className="bi bi-box-arrow-up-right me-1"),
+            "Example input files",
+        ],
+        href="https://github.com/neurobagel/digest/blob/main/example_bagels",
+        target="_blank",
+    )
+
     github = dbc.NavLink(
         children=[
             html.I(className="bi bi-github me-1"),
@@ -71,6 +80,7 @@ def navbar():
                         dbc.Nav(
                             [
                                 schemas,
+                                example_inputs,
                                 github,
                             ],
                         ),
@@ -91,7 +101,7 @@ def upload_buttons() -> list:
     upload_imaging = dcc.Upload(
         id={"type": "upload-data", "index": "imaging", "btn_idx": 0},
         children=dbc.Button(
-            "Drag & Drop or Select an Imaging CSV File",
+            "Select imaging CSV file...",
             color="light",
         ),
         multiple=False,
@@ -100,7 +110,7 @@ def upload_buttons() -> list:
     upload_phenotypic = dcc.Upload(
         id={"type": "upload-data", "index": "phenotypic", "btn_idx": 1},
         children=dbc.Button(
-            "Drag & Drop or Select a Phenotypic CSV File",
+            "Select phenotypic CSV file...",
             color="light",
         ),
         multiple=False,
@@ -109,22 +119,51 @@ def upload_buttons() -> list:
     return [upload_imaging, upload_phenotypic]
 
 
+def available_digest_menu():
+    """Generates the dropdown menus for selecting a dataset with a 'preloaded' digest file."""
+    return dbc.ButtonGroup(
+        children=[
+            dbc.DropdownMenu(
+                label="Available imaging digests",
+                children=[
+                    dbc.DropdownMenuItem(
+                        "Quebec Parkinson Network",
+                        id={
+                            "type": "load-available-digest",
+                            "index": "imaging",
+                            "dataset": "qpn",
+                        },
+                    ),
+                ],
+                group=True,
+                id="imaging-digest-dropdown",
+                color="light",
+            ),
+            dbc.DropdownMenu(
+                label="Available phenotypic digests",
+                children=[
+                    dbc.DropdownMenuItem(
+                        "Quebec Parkinson Network",
+                        id={
+                            "type": "load-available-digest",
+                            "index": "phenotypic",
+                            "dataset": "qpn",
+                        },
+                    ),
+                ],
+                group=True,
+                id="phenotypic-digest-dropdown",
+                color="light",
+            ),
+        ],
+    )
+
+
 def upload_container():
     return html.Div(
         id="upload-buttons",
         children=upload_buttons(),
         className="hstack gap-3",
-    )
-
-
-def sample_data_button():
-    """Generates the button to view sample input files."""
-    return dbc.Button(
-        "Example input files",
-        color="dark",
-        outline=True,
-        href="https://github.com/neurobagel/digest/blob/main/example_bagels",
-        target="_blank",  # open external site in new tab
     )
 
 
@@ -189,7 +228,6 @@ def table_summary():
             html.Div(
                 # TODO: Merge this component with the input-filename component once error alert elements are implemented
                 id="upload-message",
-                children="Upload a CSV file to begin.",
             ),
             html.Div(
                 id="column-count",
@@ -223,9 +261,16 @@ def status_legend_card():
                             id="title-tooltip-target",
                         ),
                         dbc.Tooltip(
-                            dcc.Markdown(
-                                "These are the recommended status definitions for processing progress. "
-                                "For more details, see the [schema for an imaging digest file](https://github.com/neurobagel/digest/blob/main/schemas/bagel_schema.json)."
+                            html.P(
+                                [
+                                    "These are the recommended status definitions for processing progress. For more details, see the ",
+                                    html.A(
+                                        "schema for an imaging digest file",
+                                        href="https://github.com/neurobagel/digest/blob/main/schemas/bagel_schema.json",
+                                        target="_blank",
+                                    ),
+                                ],
+                                className="mb-0",
                             ),
                             autohide=False,
                             target="title-tooltip-target",
@@ -243,6 +288,64 @@ def status_legend_card():
             ]
         ),
         id="processing-status-legend",
+        style={"display": "none"},
+    )
+
+
+def filtering_syntax_help_collapse():
+    """Generates the collapse element that displays syntax help for built-in datatable filtering."""
+    return html.Div(
+        [
+            dbc.Button(
+                [
+                    html.I(
+                        id="filtering-syntax-help-icon",
+                        className="bi bi-caret-right-fill me-1",
+                    ),
+                    "Built-in datatable filtering syntax",
+                ],
+                color="link",
+                id="filtering-syntax-help-button",
+                n_clicks=0,
+                className="ps-0",
+            ),
+            dbc.Collapse(
+                dbc.Card(
+                    html.P(
+                        [
+                            dcc.Markdown(
+                                "To filter column values in the table below, "
+                                "supported operators include: `contains` (default), "
+                                "`=`, `>`, `<`, `>=`, `<=`, `!=`. "
+                                "To filter a column for missing (empty) values, use `is blank`.\n"
+                                "(Note: there is currently no filter for `is not blank`. This is a known limitation that will be fixed in the future.)",
+                                style={"white-space": "pre-wrap"},
+                                # NOTE: dcc.Markdown actually has problems rendering custom padding/margin (https://community.plotly.com/t/dcc-markdown-style-margin-adjustment/15208) and by default always has bottom padding
+                                # As a result, the below setting actually doesn't anything (but is left here in case dcc.Markdown is fixed in the future)
+                                className="mb-0",
+                            ),
+                            html.P(
+                                [
+                                    "For detailed info on the filtering syntax available, see ",
+                                    html.A(
+                                        children="here.",
+                                        href="https://dash.plotly.com/datatable/filtering",
+                                        target="_blank",
+                                    ),
+                                    " To filter based on multiple sessions simultaneously, use the advanced filtering options below.",
+                                ],
+                                className="mb-0",
+                            ),
+                        ],
+                        className="mb-0",
+                    ),
+                    body=True,
+                ),
+                id="filtering-syntax-help-collapse",
+                is_open=False,
+            ),
+        ],
+        id="filtering-syntax-help",
         style={"display": "none"},
     )
 
@@ -285,9 +388,14 @@ def advanced_filter_form_title():
                 id="tooltip-question-target",
             ),
             dbc.Tooltip(
-                dcc.Markdown(
-                    "Filter based on multiple sessions simultaneously. "
-                    "Note that any data filters selected here will always be applied *before* any column filters specified directly in the data table."
+                html.P(
+                    [
+                        "Filter based on multiple sessions simultaneously. "
+                        "Note that any data filters selected here will always be applied ",
+                        html.I("before"),
+                        " any column filters specified directly in the data table.",
+                    ],
+                    className="mb-0",
                 ),
                 target="tooltip-question-target",
             ),
@@ -389,9 +497,17 @@ def column_summary_card():
                     className="card-title",
                 ),
                 html.P(
-                    id="column-summary",
-                    style={"whiteSpace": "pre-wrap"},  # preserve newlines
+                    [
+                        "column data type: ",
+                        html.Span(id="column-data-type"),
+                        html.P(),
+                        html.P(
+                            id="column-summary",
+                            className="mb-0",
+                        ),
+                    ],
                     className="card-text",
+                    style={"whiteSpace": "pre-wrap"},
                 ),
             ],
         ),
@@ -415,14 +531,29 @@ def construct_layout():
     return html.Div(
         children=[
             navbar(),
+            dcc.Store(id="was-upload-used"),
             dcc.Store(id="memory-filename"),
             dcc.Store(id="memory-sessions"),
             dcc.Store(id="memory-overview"),
             dcc.Store(id="memory-pipelines"),
-            html.Div(
-                children=[upload_container(), sample_data_button()],
+            dbc.Row(
+                children=[
+                    dbc.Col(
+                        [
+                            html.Div("Upload your own digest file:"),
+                            upload_container(),
+                        ],
+                        width=5,
+                    ),
+                    dbc.Col(
+                        [
+                            html.Div("Load an available digest file:"),
+                            available_digest_menu(),
+                        ],
+                        width=7,
+                    ),
+                ],
                 style={"margin-top": "10px", "margin-bottom": "10px"},
-                className="hstack gap-3",
             ),
             dataset_name_dialog(),
             html.Div(
@@ -440,6 +571,7 @@ def construct_layout():
                             ),
                         ]
                     ),
+                    filtering_syntax_help_collapse(),
                     overview_table(),
                 ],
                 style={"margin-top": "10px", "margin-bottom": "10px"},

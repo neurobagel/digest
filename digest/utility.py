@@ -25,6 +25,26 @@ PIPE_COMPLETE_STATUS_SHORT_DESC = {
     "UNAVAILABLE": "Relevant MRI modality for pipeline not available.",
 }
 
+# TODO:
+# Could also use URLs for "imaging" or "phenotypic" locations if fetching from a remote repo doesn't slow things down too much.
+# Note that this would only work for public repos or private repos with a token.
+# TODO: move this to a config file?
+PUBLIC_DIGEST_FILE_PATHS = {
+    "qpn": {
+        "name": "Quebec Parkinson Network",
+        "imaging": Path(__file__).absolute().parents[2]
+        / "nipoppy-qpn"
+        / "nipoppy"
+        / "digest"
+        / "qpn_imaging_availability_digest.csv",
+        "phenotypic": Path(__file__).absolute().parents[2]
+        / "nipoppy-qpn"
+        / "nipoppy"
+        / "digest"
+        / "qpn_tabular_availability_digest.csv",
+    }
+}
+
 
 def reset_column_dtypes(data: pd.DataFrame) -> pd.DataFrame:
     """
@@ -41,6 +61,23 @@ def reset_column_dtypes(data: pd.DataFrame) -> pd.DataFrame:
     # Just in case, convert session labels back to strings (will avoid sessions being undesirably treated as continuous data in e.g., plots)
     data_retyped["session"] = data_retyped["session"].astype(str)
     return data_retyped
+
+
+def type_column_for_dashtable(df_column: pd.Series) -> str:
+    """
+    Determines the appropriate type for a given column for use in a dash datatable, using Pandas and the column dtype.
+    This is needed because dash datatable does not automatically infer column data types, and will treat all columns as 'text' for filtering purposes by default
+    (the actual default column type is 'any' if not defined manually).
+
+    See also https://dash.plotly.com/datatable/filtering.
+
+    # TODO:
+    # - This is pretty simplistic and mainly to enable easier selection of filtering UI syntax - we might be able to remove this after switch to AG Grid
+    # - If needed, in future could support explicitly setting 'datetime' type as well, by applying pd.to_datetime() and catching any errors
+    """
+    if np.issubdtype(df_column.dtype, np.number):
+        return "numeric"
+    return "text"
 
 
 def construct_legend_str(status_desc: dict) -> str:
@@ -80,16 +117,23 @@ def get_missing_required_columns(bagel: pd.DataFrame, schema_file: str) -> set:
     )
 
 
-def get_event_id_columns(bagel: pd.DataFrame, schema: str) -> Union[list, str]:
-    """Returns names of columns which identify a unique assessment or processing pipeline."""
+def get_event_id_columns(
+    bagel: pd.DataFrame, schema: str
+) -> Union[str, list, None]:
+    """
+    Returns name(s) of columns which identify a unique assessment or processing pipeline.
+
+    When there is only one relevant column, we return a string instead of a list to avoid grouper problems when the column name is used in pandas groupby.
+    """
     if schema == "imaging":
         return ["pipeline_name", "pipeline_version"]
-    elif schema == "phenotypic":
+    if schema == "phenotypic":
         return (
             ["assessment_name", "assessment_version"]
             if "assessment_version" in bagel.columns
             else "assessment_name"
         )
+    return None
 
 
 def extract_pipelines(bagel: pd.DataFrame, schema: str) -> dict:
@@ -134,23 +178,9 @@ def get_id_columns(data: pd.DataFrame) -> list:
     )
 
 
-def are_subjects_same_across_pipelines(
-    bagel: pd.DataFrame, schema: str
-) -> bool:
-    """Checks if subjects and sessions are the same across pipelines in the input."""
-    pipelines_dict = extract_pipelines(bagel, schema)
-
-    pipeline_subject_sessions = []
-    for df in pipelines_dict.values():
-        # per pipeline, rows are sorted first in case participants/sessions are out of order
-        pipeline_subject_sessions.append(
-            df.sort_values(get_id_columns(bagel)).loc[:, get_id_columns(bagel)]
-        )
-
-    return all(
-        pipeline.equals(pipeline_subject_sessions[0])
-        for pipeline in pipeline_subject_sessions
-    )
+def get_duplicate_entries(data: pd.DataFrame, subset: list) -> pd.DataFrame:
+    """Returns a dataframe containing all duplicate entries in the input data."""
+    return data[data.duplicated(subset=subset, keep=False)]
 
 
 def count_unique_subjects(data: pd.DataFrame) -> int:
@@ -170,9 +200,16 @@ def count_unique_records(data: pd.DataFrame) -> int:
 
 def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
     """
-    Constructs a dataframe containing global statuses of pipelines in bagel.csv
-    (based on "pipeline_complete" column) for each participant and session.
+    Constructs a wide format dataframe from the long format input file,
+    with one row per participant-session pair and one column per event (e.g., pipeline, assessment)
     """
+    # NOTE: pd.pivot_table has more flexibility in terms of replacing all NaN values in the pivotted table and handling duplicate entries (not really needed in our case),
+    # but has known issues where it silently drops NaNs, regardless of the dropna parameter value.
+    # For now we don't need the extra flexibility, so we use the simpler pd.pivot instead.
+    #
+    # Related issues:
+    # https://github.com/pandas-dev/pandas/issues/21969
+    # https://github.com/pandas-dev/pandas/issues/17595
     pipeline_complete_df = bagel.pivot(
         index=get_id_columns(bagel),
         columns=get_event_id_columns(bagel, schema),
@@ -191,6 +228,8 @@ def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
 
     pipeline_complete_df = (
         # Enforce original order of sessions as they appear in input (pivot automatically sorts them)
+        #   NOTE: .reindex only works correctly when there are no NaN values in the index level
+        #   (Here, the entire "session" column should have already been cast to a string)
         pipeline_complete_df.reindex(
             index=bagel["session"].unique(), level="session"
         )
@@ -202,44 +241,63 @@ def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
     return reset_column_dtypes(pipeline_complete_df)
 
 
-def parse_csv_contents(
-    contents, filename, schema
+def load_file_from_path(
+    file_path: Path,
 ) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
-    """
-    Returns contents of a bagel.csv as a dataframe, if no issues detected.
+    """Reads in a CSV file (if it exists) and returns it as a dataframe."""
+    if not file_path.exists():
+        return None, "File not found."
 
-    Returns
-    -------
-    pd.DataFrame or None
-        Dataframe containing contents of the parsed input tabular file.
-    str or None
-        Informative error raised during parsing of the input, if applicable.
-    """
-    error_msg = None
-    if filename.endswith(".csv"):
-        content_type, content_string = contents.split(",")
-        decoded = base64.b64decode(content_string)
-        bagel = pd.read_csv(io.StringIO(decoded.decode("utf-8")))
-
-        if (
-            len(
-                missing_req_cols := get_missing_required_columns(
-                    bagel, BAGEL_CONFIG[schema]["schema_file"]
-                )
-            )
-            > 0
-        ):
-            error_msg = f"The selected CSV is missing the following required {schema} metadata columns: {missing_req_cols}. Please try again."
-        elif not are_subjects_same_across_pipelines(bagel, schema):
-            error_msg = "The pipelines in the selected CSV do not have the same number of subjects and sessions. Please try again."
-    else:
-        error_msg = "Invalid file type. Please upload a .csv file."
-
-    if error_msg is not None:
-        return None, error_msg
-
-    bagel["session"] = bagel["session"].astype(str)
+    bagel = pd.read_csv(file_path)
     return bagel, None
+
+
+def load_file_from_contents(
+    filename: str, contents: str
+) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
+    """Returns contents of an uploaded CSV file as a dataframe."""
+    if not filename.endswith(".csv"):
+        return None, "Invalid file type. Please upload a .csv file."
+
+    content_type, content_string = contents.split(",")
+    decoded = base64.b64decode(content_string)
+    bagel = pd.read_csv(io.StringIO(decoded.decode("utf-8")))
+    return bagel, None
+
+
+def get_schema_validation_errors(
+    bagel: pd.DataFrame, schema: str
+) -> Optional[str]:
+    """Checks that the input CSV adheres to the schema for the selected bagel type. If not, returns an informative error message as a string."""
+    error_msg = None
+
+    # Get the columns that uniquely identify a participant-session's value for an event,
+    # to be able to check for duplicate entries before transforming the data to wide format later on
+    unique_value_id_columns = get_id_columns(bagel) + (
+        get_event_id_columns(bagel, schema)
+        if isinstance(get_event_id_columns(bagel, schema), list)
+        else [get_event_id_columns(bagel, schema)]
+    )
+
+    if (
+        len(
+            missing_req_cols := get_missing_required_columns(
+                bagel, BAGEL_CONFIG[schema]["schema_file"]
+            )
+        )
+        > 0
+    ):
+        error_msg = f"The selected CSV is missing the following required {schema} metadata columns: {missing_req_cols}. Please try again."
+    elif (
+        get_duplicate_entries(
+            data=bagel, subset=unique_value_id_columns
+        ).shape[0]
+        > 0
+    ):
+        # TODO: Switch to warning once alerts are implemented for errors?
+        error_msg = f"The selected CSV contains duplicate entries in the combination of: {unique_value_id_columns}. Please double check your input."
+
+    return error_msg
 
 
 def filter_records(
