@@ -38,6 +38,25 @@ In brief, generating a `bagel.csv` for your dataset can be as simple as:
     - To see help text for this script: `python run_tracker.py --help`
     - This step can be repeated as needed to update the `bagel.csv` with newly processed subjects
 
+## Running in a Docker container
+
+1. To get the most recent changes, pull the `neurobagel/digest` docker image tagged `nightly`:
+```bash
+docker pull neurobagel/digest:nightly
+```
+
+2. Currently, `digest` also relies on a local copy of the [`nipoppy-qpn`](https://github.com/neurodatascience/nipoppy-qpn) repository, which contains ready-to-use `digest` files that are automatically generated for the Quebec Parkinson Network data.
+```
+git clone https://github.com/neurodatascience/nipoppy-qpn.git
+```
+
+3. Run `digest` and mount the `nipoppy-qpn` directory into the container:
+```bash
+docker run -d -p 8050:8050 -v ${PWD}/nipoppy-qpn:/app/nipoppy-qpn neurobagel/digest:nightly
+```
+
+Now, the dashboard can be accessed at http://127.0.0.1:8050 on your local machine.
+
 ## Local development
 To install `digest` from the source repository, run the following in a Python environment:
 ```bash
