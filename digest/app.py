@@ -7,11 +7,11 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import ALL, Dash, ctx, dcc, html
 from dash.dependencies import Input, Output, State
-from utility import PRIMARY_SESSION
 
 from . import plotting as plot
 from . import utility as util
 from .layout import DEFAULT_DATASET_NAME, construct_layout, upload_buttons
+from .utility import PRIMARY_SESSION
 
 EMPTY_FIGURE_PROPS = {"data": [], "layout": {}, "frames": []}
 

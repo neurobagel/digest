@@ -5,9 +5,9 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from utility import PRIMARY_SESSION
 
 from . import utility as util
+from .utility import PRIMARY_SESSION
 
 CMAP = px.colors.qualitative.Bold
 STATUS_COLORS = {
