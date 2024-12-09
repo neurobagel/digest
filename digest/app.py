@@ -188,7 +188,7 @@ def process_bagel(upload_contents, available_digest_nclicks, filenames):
         {"type": schema, "data": overview_df.to_dict("records")},
         pipelines_dict,
         None,
-        "csv",
+        "csv",  # NOTE: "tsv" does not appear to be an option for export_format
     )
 
 

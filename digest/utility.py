@@ -11,7 +11,7 @@ SCHEMAS_PATH = Path(__file__).absolute().parents[1] / "schemas"
 BAGEL_CONFIG = {
     "imaging": {
         "schema_file": "bagel_schema.json",
-        "overview_col": "pipeline_complete",
+        "overview_col": "status",
     },
     "phenotypic": {
         "schema_file": "bagel_schema_pheno.json",
@@ -244,31 +244,31 @@ def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
 def load_file_from_path(
     file_path: Path,
 ) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
-    """Reads in a CSV file (if it exists) and returns it as a dataframe."""
+    """Reads in a TSV file (if it exists) and returns it as a dataframe."""
     if not file_path.exists():
         return None, "File not found."
 
-    bagel = pd.read_csv(file_path)
+    bagel = pd.read_tsv(file_path, sep="\t")
     return bagel, None
 
 
 def load_file_from_contents(
     filename: str, contents: str
 ) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
-    """Returns contents of an uploaded CSV file as a dataframe."""
-    if not filename.endswith(".csv"):
-        return None, "Invalid file type. Please upload a .csv file."
+    """Returns contents of an uploaded TSV file as a dataframe."""
+    if not filename.endswith(".tsv"):
+        return None, "Invalid file type. Please upload a .tsv file."
 
     content_type, content_string = contents.split(",")
     decoded = base64.b64decode(content_string)
-    bagel = pd.read_csv(io.StringIO(decoded.decode("utf-8")))
+    bagel = pd.read_csv(io.StringIO(decoded.decode("utf-8")), sep="\t")
     return bagel, None
 
 
 def get_schema_validation_errors(
     bagel: pd.DataFrame, schema: str
 ) -> Optional[str]:
-    """Checks that the input CSV adheres to the schema for the selected bagel type. If not, returns an informative error message as a string."""
+    """Checks that the input file adheres to the schema for the selected bagel type. If not, returns an informative error message as a string."""
     error_msg = None
 
     # Get the columns that uniquely identify a participant-session's value for an event,
@@ -287,7 +287,7 @@ def get_schema_validation_errors(
         )
         > 0
     ):
-        error_msg = f"The selected CSV is missing the following required {schema} metadata columns: {missing_req_cols}. Please try again."
+        error_msg = f"The selected TSV is missing the following required {schema} metadata columns: {missing_req_cols}. Please try again."
     elif (
         get_duplicate_entries(
             data=bagel, subset=unique_value_id_columns
@@ -295,7 +295,7 @@ def get_schema_validation_errors(
         > 0
     ):
         # TODO: Switch to warning once alerts are implemented for errors?
-        error_msg = f"The selected CSV contains duplicate entries in the combination of: {unique_value_id_columns}. Please double check your input."
+        error_msg = f"The selected TSV contains duplicate entries in the combination of: {unique_value_id_columns}. Please double check your input."
 
     return error_msg
 

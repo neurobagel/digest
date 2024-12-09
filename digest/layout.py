@@ -101,7 +101,7 @@ def upload_buttons() -> list:
     upload_imaging = dcc.Upload(
         id={"type": "upload-data", "index": "imaging", "btn_idx": 0},
         children=dbc.Button(
-            "Select imaging CSV file...",
+            "Select imaging TSV file...",
             color="light",
         ),
         multiple=False,
@@ -110,7 +110,7 @@ def upload_buttons() -> list:
     upload_phenotypic = dcc.Upload(
         id={"type": "upload-data", "index": "phenotypic", "btn_idx": 1},
         children=dbc.Button(
-            "Select phenotypic CSV file...",
+            "Select phenotypic TSV file...",
             color="light",
         ),
         multiple=False,
