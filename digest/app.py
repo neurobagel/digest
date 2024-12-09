@@ -437,8 +437,10 @@ def reset_selections(filename):
 )
 def generate_overview_status_fig_for_participants(parsed_data, session_list):
     """
-    If new dataset uploaded, generate stacked bar plot of pipeline_complete statuses per session,
-    grouped by pipeline. Provides overview of the number of participants with each status in a given session,
+    When a new dataset is uploaded, generate stacked bar plots of pipeline statuses per session,
+    grouped in subplots corresponding to each pipeline.
+
+    Provides overview of the number of participants with each status in a given session,
     per processing pipeline.
     """
     if parsed_data is not None and parsed_data.get("type") != "phenotypic":
@@ -468,7 +470,7 @@ def generate_overview_status_fig_for_participants(parsed_data, session_list):
 def update_overview_status_fig_for_records(data, pipelines_dict, parsed_data):
     """
     When visible data in the overview datatable is updated (excluding built-in frontend datatable filtering
-    but including custom component filtering), generate stacked bar plot of pipeline_complete statuses aggregated
+    but including custom component filtering), generate stacked bar plot of pipeline statuses aggregated
     by pipeline. Counts of statuses in plot thus correspond to unique records (unique participant-session
     combinations).
     """
@@ -480,7 +482,7 @@ def update_overview_status_fig_for_records(data, pipelines_dict, parsed_data):
     if not data_df.empty:
         status_counts = (
             plot.transform_active_data_to_long(data_df)
-            .groupby(["pipeline_name", "pipeline_complete"])
+            .groupby(["pipeline_name", "status"])
             .size()
             .reset_index(name="records")
         )

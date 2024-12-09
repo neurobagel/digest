@@ -223,6 +223,7 @@ def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
     # Related issues:
     # https://github.com/pandas-dev/pandas/issues/21969
     # https://github.com/pandas-dev/pandas/issues/17595
+    # TODO: Rename variable to reflect renaming of "pipeline_complete" column
     pipeline_complete_df = bagel.pivot(
         index=get_id_columns(bagel),
         columns=get_event_id_columns(bagel, schema),
