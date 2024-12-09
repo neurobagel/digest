@@ -18,12 +18,14 @@ BAGEL_CONFIG = {
         "overview_col": "assessment_score",
     },
 }
+# TODO: Update
 PIPE_COMPLETE_STATUS_SHORT_DESC = {
     "SUCCESS": "All expected output files of pipeline are present.",
     "FAIL": "At least one expected output of pipeline is missing.",
     "INCOMPLETE": "Pipeline has not yet been run (output directory not available).",
     "UNAVAILABLE": "Relevant MRI modality for pipeline not available.",
 }
+PRIMARY_SESSION = "session_id"
 
 # TODO:
 # Could also use URLs for "imaging" or "phenotypic" locations if fetching from a remote repo doesn't slow things down too much.
@@ -59,7 +61,7 @@ def reset_column_dtypes(data: pd.DataFrame) -> pd.DataFrame:
     stream.close()
 
     # Just in case, convert session labels back to strings (will avoid sessions being undesirably treated as continuous data in e.g., plots)
-    data_retyped["session"] = data_retyped["session"].astype(str)
+    data_retyped[PRIMARY_SESSION] = data_retyped[PRIMARY_SESSION].astype(str)
     return data_retyped
 
 
@@ -91,7 +93,7 @@ def construct_summary_str(data: pd.DataFrame) -> str:
     """Creates summary of key counts for dataset."""
     return f"""Total number of participants: {count_unique_subjects(data)}
 Total number of unique records (participant-session pairs): {count_unique_records(data)}
-Total number of unique sessions: {data["session"].nunique()}"""
+Total number of unique sessions: {data[PRIMARY_SESSION].nunique()}"""
 
 
 def get_required_bagel_columns(schema_file: str) -> list:
@@ -126,7 +128,7 @@ def get_event_id_columns(
     When there is only one relevant column, we return a string instead of a list to avoid grouper problems when the column name is used in pandas groupby.
     """
     if schema == "imaging":
-        return ["pipeline_name", "pipeline_version"]
+        return ["pipeline_name", "pipeline_version", "pipeline_step"]
     if schema == "phenotypic":
         return (
             ["assessment_name", "assessment_version"]
@@ -136,6 +138,7 @@ def get_event_id_columns(
     return None
 
 
+# TODO: Generalize function name to include both assessments and pipelines (e.g., extract_measures or extract_modules)?
 def extract_pipelines(bagel: pd.DataFrame, schema: str) -> dict:
     """Get data for each unique pipeline in the aggregate input as an individual labelled dataframe."""
     pipelines_dict = {}
@@ -148,8 +151,9 @@ def extract_pipelines(bagel: pd.DataFrame, schema: str) -> dict:
     pipelines = bagel.groupby(by=groupby, sort=sort)
 
     if isinstance(groupby, list):
-        for (name, version), pipeline in pipelines:
-            label = f"{name}-{version}"
+        for pipeline_ids, pipeline in pipelines:
+            # Construct a unique identifier for the pipeline/assessment
+            label = "-".join(pipeline_ids)
             # per pipeline, sort by participant_id (not sorting by session_id here to avoid disrupting chronological order)
             pipelines_dict[label] = (
                 pipeline.sort_values(["participant_id"])
@@ -169,13 +173,17 @@ def extract_pipelines(bagel: pd.DataFrame, schema: str) -> dict:
     return pipelines_dict
 
 
+# TODO: Revisit if we need to consider all the ID columns here, and if the order matters
 def get_id_columns(data: pd.DataFrame) -> list:
     """Returns names of columns which identify a given participant record"""
-    return (
-        ["participant_id", "bids_id", "session"]
-        if "bids_id" in data.columns
-        else ["participant_id", "session"]
-    )
+    id_columns = ["participant_id", "session_id"]
+
+    if "bids_participant_id" in data.columns:
+        id_columns.append("bids_participant_id")
+    if "bids_session_id" in data.columns:
+        id_columns.append("bids_session_id")
+
+    return id_columns
 
 
 def get_duplicate_entries(data: pd.DataFrame, subset: list) -> pd.DataFrame:
@@ -193,11 +201,16 @@ def count_unique_subjects(data: pd.DataFrame) -> int:
 
 def count_unique_records(data: pd.DataFrame) -> int:
     """Returns number of unique participant-session pairs."""
-    if set(["participant_id", "session"]).issubset(data.columns):
-        return data[["participant_id", "session"]].drop_duplicates().shape[0]
+    if set(["participant_id", PRIMARY_SESSION]).issubset(data.columns):
+        return (
+            data[["participant_id", PRIMARY_SESSION]]
+            .drop_duplicates()
+            .shape[0]
+        )
     return 0
 
 
+# TODO: Generalize function name to include both assessments and pipelines (e.g., extract_measures or extract_modules)?
 def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
     """
     Constructs a wide format dataframe from the long format input file,
@@ -229,9 +242,9 @@ def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
     pipeline_complete_df = (
         # Enforce original order of sessions as they appear in input (pivot automatically sorts them)
         #   NOTE: .reindex only works correctly when there are no NaN values in the index level
-        #   (Here, the entire "session" column should have already been cast to a string)
+        #   (Here, the entire "session_id" column should have already been cast to a string)
         pipeline_complete_df.reindex(
-            index=bagel["session"].unique(), level="session"
+            index=bagel[PRIMARY_SESSION].unique(), level=PRIMARY_SESSION
         )
         .reindex(col_order, axis=1)  # reorder assessments/pipelines if needed
         .reset_index()
@@ -329,7 +342,7 @@ def filter_records(
         matching_subs = []
         for sub_id, sub in data.groupby("participant_id"):
             if all(
-                session in sub["session"].unique()
+                session in sub[PRIMARY_SESSION].unique()
                 for session in session_values
             ):
                 if all(

@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from utility import PRIMARY_SESSION
 
 from . import utility as util
 
@@ -60,28 +61,28 @@ def plot_pipeline_status_by_participants(
 ) -> go.Figure:
     status_counts = (
         transform_active_data_to_long(data)
-        .groupby(["pipeline_name", "pipeline_complete", "session"])
+        .groupby(["pipeline_name", "pipeline_complete", PRIMARY_SESSION])
         .size()
         .reset_index(name="participants")
     )
 
     fig = px.bar(
         status_counts,
-        x="session",
+        x=PRIMARY_SESSION,
         y="participants",
         color="pipeline_complete",
         text_auto=True,
         facet_col="pipeline_name",
         category_orders={
             "pipeline_complete": util.PIPE_COMPLETE_STATUS_SHORT_DESC.keys(),
-            "session": session_list,
+            PRIMARY_SESSION: session_list,
         },
         color_discrete_map=STATUS_COLORS,
         labels={
             "pipeline_name": "Pipeline",
             "participants": "Participants (n)",
             "pipeline_complete": "Processing status",
-            "session": "Session",
+            PRIMARY_SESSION: "Session",
         },
         title="All participant pipeline statuses by session",
     )

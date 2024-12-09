@@ -7,6 +7,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import ALL, Dash, ctx, dcc, html
 from dash.dependencies import Input, Output, State
+from utility import PRIMARY_SESSION
 
 from . import plotting as plot
 from . import utility as util
@@ -156,9 +157,9 @@ def process_bagel(upload_contents, available_digest_nclicks, filenames):
             # TODO: Any existing NaNs will currently be turned into "nan". (See open issue https://github.com/pandas-dev/pandas/issues/25353)
             # Another side effect of allowing NaN sessions is that if this column has integer values, they will be read in as floats
             # (before being converted to str) if there are NaNs in the column.
-            # This should not be a problem after we disallow NaNs value in "participant_id" and "session" columns, https://github.com/neurobagel/digest/issues/20
-            bagel["session"] = bagel["session"].astype(str)
-            session_list = bagel["session"].unique().tolist()
+            # This should not be a problem after we disallow NaNs value in "participant_id" and "session_id" columns, https://github.com/neurobagel/digest/issues/20
+            bagel[PRIMARY_SESSION] = bagel[PRIMARY_SESSION].astype(str)
+            session_list = bagel[PRIMARY_SESSION].unique().tolist()
 
             overview_df = util.get_pipelines_overview(
                 bagel=bagel, schema=schema
@@ -512,7 +513,7 @@ def display_phenotypic_column_dropdown(parsed_data):
         # exclude unique participant identifier columns from visualization
         if column not in [
             "participant_id",
-            "bids_id",
+            "bids_participant_id",
         ]:  # TODO: Consider storing these column names in a constant
             column_options.append({"label": column, "value": column})
 
@@ -552,7 +553,7 @@ def plot_phenotypic_column(
         data_to_plot = virtual_data
 
     if session_switch_value:
-        color = "session"
+        color = PRIMARY_SESSION
     else:
         color = None
 
