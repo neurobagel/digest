@@ -3,90 +3,59 @@
         "participant_id": {
             "Description": "Participant identifier.", 
             "dtype": "str",
-            "IsRequired": true,
-            "IsPrefixedColumn": false
+            "IsRequired": true
         },
         "bids_participant_id": {
             "Description": "BIDS-compliant participant identifier.",
             "dtype": "str",
-            "IsRequired": false,
-            "IsPrefixedColumn": false
+            "IsRequired": false
         },
         "session_id": {
             "Description": "Participant session identifier.", 
             "dtype": "str",
-            "IsRequired": true,
-            "IsPrefixedColumn": false
+            "IsRequired": true
         },
         "bids_session_id": {
             "Description": "BIDS-compliant session identifier.", 
             "dtype": "str",
-            "IsRequired": false,
-            "IsPrefixedColumn": false
-        },
-        "has_mri_data": {
-            "Description": "Whether or not participant had MRI data acquired in a given session.",
-            "dtype": "bool",
-            "IsRequired": false,
-            "Range": [true, false],
-            "IsPrefixedColumn": false
-        },
-        "HAS_DATATYPE__": {
-            "Description": "Whether or not participant session has specified raw BIDS datatype. Column suffix should correspond to a specific BIDS subdirectory. e.g., 'HAS_DATATYPE__anat'",
-            "dtype": "bool",
-            "IsRequired": false,
-            "Range": [true, false],
-            "IsPrefixedColumn": true
-        },
-        "HAS_IMAGE__": {
-            "Description": "Whether or not participant session has specified imaging file. Column suffix should correspond to a BIDS file suffix. e.g. 'HAS_IMAGE__T1w'",
-            "dtype": "bool",
-            "IsRequired": false,
-            "Range": [true, false],
-            "IsPrefixedColumn": true
+            "IsRequired": false
         },
         "pipeline_name": {
             "Description": "Name of the pipeline that was run.",
             "dtype": "str",
             "IsRequired": true,
-            "MissingValue": "UNAVAILABLE",
-            "IsPrefixedColumn": false
+            "MissingValue": "UNAVAILABLE"
         },     
         "pipeline_version": {
             "description": "Version of the pipeline that was run. Must have a value if the value for 'pipeline_name' is not 'UNAVAILABLE'.",
             "dtype": "str",
             "IsRequired": true,
-            "MissingValue": "UNAVAILABLE",
-            "IsPrefixedColumn": false
+            "MissingValue": "UNAVAILABLE"
         },
         "pipeline_starttime": {
             "Description": "Date/time that pipeline run was started. In format of 'YYYY-MM-DD HH:MM:SS'.",
             "dtype": "str",
             "IsRequired": false,
-            "MissingValue": "UNAVAILABLE",
-            "IsPrefixedColumn": false
+            "MissingValue": "UNAVAILABLE"
         },
         "pipeline_endtime": {
             "Description": "Date/time that pipeline run ended. In format of 'YYYY-MM-DD HH:MM:SS'.",
             "dtype": "str",
             "IsRequired": false,
-            "MissingValue": "UNAVAILABLE",
-            "IsPrefixedColumn": false
+            "MissingValue": "UNAVAILABLE"
         }
     },
     "PIPELINE_STATUS_COLUMNS": {
         "pipeline_step": {
             "Description": "Name of a specific step in a pipeline.",
             "dtype": "str",
-            "IsRequired": true,
-            "IsPrefixedColumn": false
+            "IsRequired": true
         },
         "status": {
             "Description": "Completion status of the pipeline run or step for the subject-session pair. 'SUCCESS': All output files are present. 'FAIL': At least one output file is missing. 'INCOMPLETE': Parent pipeline has not been run for the subject session. 'UNAVAILABLE': Relevant MRI modality for pipeline not available for subject session.",
             "dtype": "str",
             "IsRequired": true,
-            "Range": ["SUCCESS", "FAIL", "INCOMPLETE", "UNAVAILABLE", ""],
-            "IsPrefixedColumn": true
+            "Range": ["SUCCESS", "FAIL", "INCOMPLETE", "UNAVAILABLE", ""]
         }
     }
 }
