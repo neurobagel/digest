@@ -1,21 +1,27 @@
 {
     "GLOBAL_COLUMNS": {
         "participant_id": {
-            "Description": "Participant identifier within a given dataset.", 
+            "Description": "Participant identifier.", 
             "dtype": "str",
             "IsRequired": true,
             "IsPrefixedColumn": false
         },
-        "bids_id": {
-            "Description": "BIDS dataset identifier for a participant, if available/different from the participant_id.", 
+        "bids_participant_id": {
+            "Description": "BIDS-compliant participant identifier.",
             "dtype": "str",
             "IsRequired": false,
             "IsPrefixedColumn": false
         },
-        "session": {
-            "Description": "Participant session ID.", 
+        "session_id": {
+            "Description": "Participant session identifier.", 
             "dtype": "str",
             "IsRequired": true,
+            "IsPrefixedColumn": false
+        },
+        "bids_session_id": {
+            "Description": "BIDS-compliant session identifier.", 
+            "dtype": "str",
+            "IsRequired": false,
             "IsPrefixedColumn": false
         },
         "has_mri_data": {
@@ -40,14 +46,14 @@
             "IsPrefixedColumn": true
         },
         "pipeline_name": {
-            "Description": "Name of a pipeline that was run for the participant, if applicable. Example value: 'freesurfer'",
+            "Description": "Name of the pipeline that was run.",
             "dtype": "str",
             "IsRequired": true,
             "MissingValue": "UNAVAILABLE",
             "IsPrefixedColumn": false
         },     
         "pipeline_version": {
-            "description": "Version of pipeline that was run. Must have a value if the value for 'pipeline_name' is not 'UNAVAILABLE'. Example value: '7.3.0'",
+            "description": "Version of the pipeline that was run. Must have a value if the value for 'pipeline_name' is not 'UNAVAILABLE'.",
             "dtype": "str",
             "IsRequired": true,
             "MissingValue": "UNAVAILABLE",
@@ -56,7 +62,7 @@
         "pipeline_starttime": {
             "Description": "Date/time that pipeline run was started. In format of 'YYYY-MM-DD HH:MM:SS'.",
             "dtype": "str",
-            "IsRequired": true,
+            "IsRequired": false,
             "MissingValue": "UNAVAILABLE",
             "IsPrefixedColumn": false
         },
@@ -69,24 +75,16 @@
         }
     },
     "PIPELINE_STATUS_COLUMNS": {
-        "pipeline_complete": {
-            "Description": "Status of pipeline run. 'SUCCESS': All expected pipeline output files (as configured by pipeline tracker) are present. 'FAIL': At least one expected pipeline output is missing. 'INCOMPLETE': Pipeline has not been run for the subject session (output directory missing). 'UNAVAILABLE': Relevant MRI modality for pipeline not available for subject session.",
+        "pipeline_step": {
+            "Description": "Name of a specific step in a pipeline.",
             "dtype": "str",
             "IsRequired": true,
-            "Range": ["SUCCESS", "FAIL", "INCOMPLETE", "UNAVAILABLE"],
             "IsPrefixedColumn": false
         },
-        "PHASE__": {
-            "Description": "Completion status of tracker-specified phase/stream of a pipeline. To be grouped to the relevant pipeline, a second prefix denoting {pipeline_name}-{pipeline_version} must be included, e.g., 'PHASE__fmriprep-20.2.7__func'. Each phase may correspond to a specific output subdirectory or a set of related outputs. If phase and stage columns are both present, each phase is expected to correspond to >= 1 stage. 'SUCCESS': All output files corresponding to phase are present. 'FAIL': At least one output file of phase is missing. This status may be used to indicate that the phase crashed. 'INCOMPLETE': Parent pipeline has not been run for the subject session. 'UNAVAILABLE': Relevant MRI modality for pipeline not available for subject session. '' (no value):  Specified phase not in pipeline described by current row/record.",
+        "status": {
+            "Description": "Completion status of the pipeline run or step for the subject-session pair. 'SUCCESS': All output files are present. 'FAIL': At least one output file is missing. 'INCOMPLETE': Parent pipeline has not been run for the subject session. 'UNAVAILABLE': Relevant MRI modality for pipeline not available for subject session.",
             "dtype": "str",
-            "IsRequired": false,
-            "Range": ["SUCCESS", "FAIL", "INCOMPLETE", "UNAVAILABLE", ""],
-            "IsPrefixedColumn": true
-        },
-        "STAGE__": {
-            "Description": "Completion status of tracker-specified stage of a pipeline. To be grouped to the relevant pipeline, a second prefix denoting {pipeline_name}-{pipeline_version} must be included, e.g., 'STAGE__fmriprep-20.2.7__space-MNI152Lin_res-1'. Each stage may correspond to a single output file, subdirectory, or a few related output files. If phase and stage columns are both present, each phase is expected to correspond to >= 1 stage. 'SUCCESS': All output files corresponding to stage are present. 'FAIL': At least one output file of stage is missing. This status may be used to indicate that the stage crashed. 'INCOMPLETE': Parent pipeline has not been run for the subject session. 'UNAVAILABLE': Relevant MRI modality for pipeline not available for subject session. '' (no value): Specified stage not in pipeline described by current row/record.",
-            "dtype": "str",
-            "IsRequired": false,
+            "IsRequired": true,
             "Range": ["SUCCESS", "FAIL", "INCOMPLETE", "UNAVAILABLE", ""],
             "IsPrefixedColumn": true
         }
