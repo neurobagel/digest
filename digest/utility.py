@@ -138,12 +138,11 @@ def get_event_id_columns(
     return None
 
 
-# TODO: Generalize function name to include both assessments and pipelines (e.g., extract_measures or extract_modules)?
+# TODO: Generalize function and variable names to include both assessments and pipelines (e.g., extract_events?)
 def extract_pipelines(bagel: pd.DataFrame, schema: str) -> dict:
-    """Get data for each unique pipeline in the aggregate input as an individual labelled dataframe."""
+    """Get rows corresponding to each unique data "event" (i.e., pipeline or assessment) in the input file as an individual labelled dataframe."""
     pipelines_dict = {}
-
-    # TODO: Possibly temporary fix - to avoid related assessment columns from being out of order
+    # Avoid related assessment columns from being out of order
     sort = bool(schema == "imaging")
 
     groupby = get_event_id_columns(bagel, schema)
@@ -213,7 +212,7 @@ def count_unique_records(data: pd.DataFrame) -> int:
     return 0
 
 
-# TODO: Generalize function name to include both assessments and pipelines (e.g., extract_measures or extract_modules)?
+# TODO: Generalize function and variable names to include both assessments and pipelines
 def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
     """
     Constructs a wide format dataframe from the long format input file,
