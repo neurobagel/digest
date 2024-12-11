@@ -38,12 +38,12 @@ PUBLIC_DIGEST_FILE_PATHS = {
         / "nipoppy-qpn"
         / "nipoppy"
         / "digest"
-        / "qpn_imaging_availability_digest.csv",
+        / "qpn_imaging_availability_digest.tsv",
         "phenotypic": Path(__file__).absolute().parents[2]
         / "nipoppy-qpn"
         / "nipoppy"
         / "digest"
-        / "qpn_tabular_availability_digest.csv",
+        / "qpn_tabular_availability_digest.tsv",
     }
 }
 
@@ -173,17 +173,20 @@ def extract_pipelines(bagel: pd.DataFrame, schema: str) -> dict:
     return pipelines_dict
 
 
-# TODO: Revisit if we need to consider all the ID columns here, and if the order matters
 def get_id_columns(data: pd.DataFrame) -> list:
-    """Returns names of columns which identify a given participant record"""
-    id_columns = ["participant_id", "session_id"]
+    """Returns names of columns found in the uploaded data which identify a given participant record."""
+    reference_id_cols = [
+        "participant_id",
+        "bids_participant_id",
+        "session_id",
+        "bids_session_id",
+    ]
+    # Preserve order of appearance in the original tabular data
+    recognized_id_cols = [
+        col for col in data.columns if col in reference_id_cols
+    ]
 
-    if "bids_participant_id" in data.columns:
-        id_columns.append("bids_participant_id")
-    if "bids_session_id" in data.columns:
-        id_columns.append("bids_session_id")
-
-    return id_columns
+    return recognized_id_cols
 
 
 def get_duplicate_entries(data: pd.DataFrame, subset: list) -> pd.DataFrame:
