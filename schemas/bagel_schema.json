@@ -23,26 +23,22 @@
         "pipeline_name": {
             "Description": "Name of the pipeline that was run.",
             "dtype": "str",
-            "IsRequired": true,
-            "MissingValue": "UNAVAILABLE"
+            "IsRequired": true
         },     
         "pipeline_version": {
             "description": "Version of the pipeline that was run. Must have a value if the value for 'pipeline_name' is not 'UNAVAILABLE'.",
             "dtype": "str",
-            "IsRequired": true,
-            "MissingValue": "UNAVAILABLE"
+            "IsRequired": true
         },
         "pipeline_starttime": {
             "Description": "Date/time that pipeline run was started. In format of 'YYYY-MM-DD HH:MM:SS'.",
             "dtype": "str",
-            "IsRequired": false,
-            "MissingValue": "UNAVAILABLE"
+            "IsRequired": false
         },
         "pipeline_endtime": {
             "Description": "Date/time that pipeline run ended. In format of 'YYYY-MM-DD HH:MM:SS'.",
             "dtype": "str",
-            "IsRequired": false,
-            "MissingValue": "UNAVAILABLE"
+            "IsRequired": false
         }
     },
     "PIPELINE_STATUS_COLUMNS": {
