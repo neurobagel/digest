@@ -117,7 +117,7 @@ def set_was_upload_used_flag(upload_contents, available_digest_nclicks):
 )
 def process_bagel(upload_contents, available_digest_nclicks, filenames):
     """
-    From the contents of a correctly-formatted uploaded .csv file, parse and store (1) the pipeline overview data as a dataframe,
+    From the contents of a correctly-formatted uploaded TSV file, parse and store (1) the pipeline overview data as a dataframe,
     and (2) pipeline-specific metadata as individual dataframes within a dict.
     Returns any errors encountered during input file processing as a user-friendly message.
     """
@@ -204,7 +204,7 @@ def reset_upload_buttons(memory_filename):
 
     Upload components need to be manually replaced to clear contents,
     otherwise previously uploaded imaging/pheno bagels cannot be re-uploaded
-    (e.g. if a user uploads pheno_bagel.csv, then imaging_bagel.csv, then pheno_bagel.csv again)
+    (e.g. if a user uploads pheno_bagel.tsv, then imaging_bagel.tsv, then pheno_bagel.tsv again)
     see https://github.com/plotly/dash-core-components/issues/816
     """
     return upload_buttons()
@@ -294,7 +294,7 @@ def update_session_filter(parsed_data, session_list):
 )
 def create_pipeline_status_dropdowns(pipelines_dict, parsed_data):
     """
-    Generates a dropdown filter with status options for each unique pipeline in the input csv,
+    Generates a dropdown filter with status options for each unique pipeline in the input TSV,
     and disables the native datatable filter UI for the corresponding columns in the datatable.
     """
     pipeline_dropdowns = []
@@ -419,7 +419,7 @@ def update_matching_rows(columns, virtual_data):
 )
 def reset_selections(filename):
     """
-    If file contents change (i.e., selected new CSV for upload), reset displayed file name and selection values related to data filtering or plotting.
+    If file contents change (i.e., selected new TSV for upload), reset displayed file name and selection values related to data filtering or plotting.
     Reset will occur regardless of whether there is an issue processing the selected file.
     """
     return f"Input file: {filename}", "", "", None, False
