@@ -1,9 +1,9 @@
-# Schema for `digest` input files
+# Schemas for `digest` input files
 
 ## Overview
 `digest` supports TSV files as inputs. 
 Expected columns in a digest file are defined in JSON files called digest schemas.
-Different schemas correspond to digest files containing different modalities of data (e.g. imaging vs. phenotypic).
+There are different schemas for digest files containing different modalities of data (e.g. imaging vs. phenotypic).
 
 | Schema | Modality of data in corresponding digest file |
 | ----- | ----- |
@@ -15,13 +15,13 @@ Different schemas correspond to digest files containing different modalities of 
 Within a schema, columns are grouped into two semantic categories. These categories are purely for organizational purposes and do not appear in an digest file.
 
 **Global columns:** Columns describing basic metadata that should have the same meaning regardless of the specific event described by a given record 
-(e.g., a certain processing pipeline or phenotypic assessment), and does not depend on event outputs.
+(e.g., a certain processing pipeline or phenotypic assessment), and do not depend on event outputs.
 
-**Event-specific columns:** Includes columns whose values may have event-specific meanings.
+**Event-specific columns:** Columns whose values may have event-specific meanings.
 e.g., in the schema for an imaging digest, the `"PIPELINE_STATUS_COLUMNS"` convey info about processing pipeline completion that depends on pipeline-specific outputs and may have varying values depending on the pipeline tracker used.
 
 ### Column attributes
-Recognized columns are individually described in the schema using the following attributes:
+Recognized columns are described in the schema using the following attributes:
 - `Description`
   - Describes the column contents, along with the meaning of different acceptable values for categorical columns.
 - `dtype`
