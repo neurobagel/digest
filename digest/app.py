@@ -11,7 +11,7 @@ from dash.dependencies import Input, Output, State
 from . import plotting as plot
 from . import utility as util
 from .layout import DEFAULT_DATASET_NAME, construct_layout, upload_buttons
-from .utility import PRIMARY_SESSION
+from .utility import PRIMARY_SESSION_COL
 
 EMPTY_FIGURE_PROPS = {"data": [], "layout": {}, "frames": []}
 
@@ -158,8 +158,8 @@ def process_bagel(upload_contents, available_digest_nclicks, filenames):
             # Another side effect of allowing NaN sessions is that if this column has integer values, they will be read in as floats
             # (before being converted to str) if there are NaNs in the column.
             # This should not be a problem after we disallow NaNs value in "participant_id" and "session_id" columns, https://github.com/neurobagel/digest/issues/20
-            bagel[PRIMARY_SESSION] = bagel[PRIMARY_SESSION].astype(str)
-            session_list = bagel[PRIMARY_SESSION].unique().tolist()
+            bagel[PRIMARY_SESSION_COL] = bagel[PRIMARY_SESSION_COL].astype(str)
+            session_list = bagel[PRIMARY_SESSION_COL].unique().tolist()
 
             overview_df = util.get_pipelines_overview(
                 bagel=bagel, schema=schema
@@ -555,7 +555,7 @@ def plot_phenotypic_column(
         data_to_plot = virtual_data
 
     if session_switch_value:
-        color = PRIMARY_SESSION
+        color = PRIMARY_SESSION_COL
     else:
         color = None
 

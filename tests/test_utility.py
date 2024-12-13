@@ -4,7 +4,7 @@ import pytest
 
 import digest.plotting as plot
 import digest.utility as util
-from digest.utility import PRIMARY_SESSION
+from digest.utility import PRIMARY_SESSION_COL
 
 
 @pytest.mark.parametrize(
@@ -166,7 +166,7 @@ def test_get_pipelines_overview(
     after reshaping data into a wide format.
     """
     bagel = pd.read_csv(bagels_path / bagel_path, sep="\t")
-    bagel[PRIMARY_SESSION] = bagel[PRIMARY_SESSION].astype(str)
+    bagel[PRIMARY_SESSION_COL] = bagel[PRIMARY_SESSION_COL].astype(str)
     overview_df = util.get_pipelines_overview(bagel=bagel, schema=schema)
 
     assert overview_df.columns.tolist() == expected_columns
@@ -237,7 +237,7 @@ def test_get_pipelines_overview_handles_nan_correctly(
     bagel, expected_overview_df
 ):
     """Test that get_pipelines_overview() handles NaN values in the original long-format data as expected."""
-    bagel[PRIMARY_SESSION] = bagel[PRIMARY_SESSION].astype(str)
+    bagel[PRIMARY_SESSION_COL] = bagel[PRIMARY_SESSION_COL].astype(str)
     overview_df = util.get_pipelines_overview(bagel=bagel, schema="phenotypic")
 
     assert overview_df.equals(expected_overview_df), overview_df

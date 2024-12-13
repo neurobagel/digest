@@ -26,7 +26,7 @@ PIPE_COMPLETE_STATUS_SHORT_DESC = {
     "UNAVAILABLE": "Relevant MRI modality for pipeline not available.",
 }
 # Column to use as the primary session identifier in the data
-PRIMARY_SESSION = "session_id"
+PRIMARY_SESSION_COL = "session_id"
 
 # TODO:
 # Could also use URLs for "imaging" or "phenotypic" locations if fetching from a remote repo doesn't slow things down too much.
@@ -62,7 +62,9 @@ def reset_column_dtypes(data: pd.DataFrame) -> pd.DataFrame:
     stream.close()
 
     # Just in case, convert session labels back to strings (will avoid sessions being undesirably treated as continuous data in e.g., plots)
-    data_retyped[PRIMARY_SESSION] = data_retyped[PRIMARY_SESSION].astype(str)
+    data_retyped[PRIMARY_SESSION_COL] = data_retyped[
+        PRIMARY_SESSION_COL
+    ].astype(str)
     return data_retyped
 
 
@@ -94,7 +96,7 @@ def construct_summary_str(data: pd.DataFrame) -> str:
     """Creates summary of key counts for dataset."""
     return f"""Total number of participants: {count_unique_subjects(data)}
 Total number of unique records (participant-session pairs): {count_unique_records(data)}
-Total number of unique sessions: {data[PRIMARY_SESSION].nunique()}"""
+Total number of unique sessions: {data[PRIMARY_SESSION_COL].nunique()}"""
 
 
 def get_required_bagel_columns(schema_file: str) -> list:
@@ -204,9 +206,9 @@ def count_unique_subjects(data: pd.DataFrame) -> int:
 
 def count_unique_records(data: pd.DataFrame) -> int:
     """Returns number of unique participant-session pairs."""
-    if set(["participant_id", PRIMARY_SESSION]).issubset(data.columns):
+    if set(["participant_id", PRIMARY_SESSION_COL]).issubset(data.columns):
         return (
-            data[["participant_id", PRIMARY_SESSION]]
+            data[["participant_id", PRIMARY_SESSION_COL]]
             .drop_duplicates()
             .shape[0]
         )
@@ -248,7 +250,8 @@ def get_pipelines_overview(bagel: pd.DataFrame, schema: str) -> pd.DataFrame:
         #   NOTE: .reindex only works correctly when there are no NaN values in the index level
         #   (Here, the entire "session_id" column should have already been cast to a string)
         pipeline_complete_df.reindex(
-            index=bagel[PRIMARY_SESSION].unique(), level=PRIMARY_SESSION
+            index=bagel[PRIMARY_SESSION_COL].unique(),
+            level=PRIMARY_SESSION_COL,
         )
         .reindex(col_order, axis=1)  # reorder assessments/pipelines if needed
         .reset_index()
@@ -346,24 +349,25 @@ def filter_records(
         matching_subs = []
         for sub_id, sub in data.groupby("participant_id"):
             if all(
-                session in sub[PRIMARY_SESSION].unique()
+                session in sub[PRIMARY_SESSION_COL].unique()
                 for session in session_values
             ):
                 if all(
                     not sub.query(
                         " and ".join(
-                            [f"{PRIMARY_SESSION} == '{session}'"]
+                            [f"{PRIMARY_SESSION_COL} == '{session}'"]
                             + pipeline_queries
                         )
                     ).empty
                     for session in session_values
                 ):
                     matching_subs.append(sub_id)
-        query = f"participant_id in {matching_subs} and {PRIMARY_SESSION} in {session_values}"
+        query = f"participant_id in {matching_subs} and {PRIMARY_SESSION_COL} in {session_values}"
     else:
         if operator_value == "OR":
             query = " and ".join(
-                [f"{PRIMARY_SESSION} in {session_values}"] + pipeline_queries
+                [f"{PRIMARY_SESSION_COL} in {session_values}"]
+                + pipeline_queries
             )
 
     data = data.query(query)

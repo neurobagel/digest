@@ -7,7 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 from . import utility as util
-from .utility import PRIMARY_SESSION
+from .utility import PRIMARY_SESSION_COL
 
 CMAP = px.colors.qualitative.Bold
 STATUS_COLORS = {
@@ -61,28 +61,28 @@ def plot_pipeline_status_by_participants(
 ) -> go.Figure:
     status_counts = (
         transform_active_data_to_long(data)
-        .groupby(["pipeline_name", "status", PRIMARY_SESSION])
+        .groupby(["pipeline_name", "status", PRIMARY_SESSION_COL])
         .size()
         .reset_index(name="participants")
     )
 
     fig = px.bar(
         status_counts,
-        x=PRIMARY_SESSION,
+        x=PRIMARY_SESSION_COL,
         y="participants",
         color="status",
         text_auto=True,
         facet_col="pipeline_name",
         category_orders={
             "status": util.PIPE_COMPLETE_STATUS_SHORT_DESC.keys(),
-            PRIMARY_SESSION: session_list,
+            PRIMARY_SESSION_COL: session_list,
         },
         color_discrete_map=STATUS_COLORS,
         labels={
             "pipeline_name": "Pipeline",
             "participants": "Participants (n)",
             "status": "Processing status",
-            PRIMARY_SESSION: "Session",
+            PRIMARY_SESSION_COL: "Session",
         },
         title="All participant pipeline statuses by session",
     )
