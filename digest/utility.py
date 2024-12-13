@@ -25,6 +25,7 @@ PIPE_COMPLETE_STATUS_SHORT_DESC = {
     "INCOMPLETE": "Pipeline has not yet been run (output directory not available).",
     "UNAVAILABLE": "Relevant MRI modality for pipeline not available.",
 }
+# Column to use as the primary session identifier in the data
 PRIMARY_SESSION = "session_id"
 
 # TODO:
@@ -351,17 +352,18 @@ def filter_records(
                 if all(
                     not sub.query(
                         " and ".join(
-                            [f"session == '{session}'"] + pipeline_queries
+                            [f"{PRIMARY_SESSION} == '{session}'"]
+                            + pipeline_queries
                         )
                     ).empty
                     for session in session_values
                 ):
                     matching_subs.append(sub_id)
-        query = f"participant_id in {matching_subs} and session in {session_values}"
+        query = f"participant_id in {matching_subs} and {PRIMARY_SESSION} in {session_values}"
     else:
         if operator_value == "OR":
             query = " and ".join(
-                [f"session in {session_values}"] + pipeline_queries
+                [f"{PRIMARY_SESSION} in {session_values}"] + pipeline_queries
             )
 
     data = data.query(query)
