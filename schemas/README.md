@@ -7,8 +7,8 @@ There are different schemas for digest files containing different modalities of 
 
 | Schema | Modality of data in corresponding digest file |
 | ----- | ----- |
-| `digest_schema_derivatives.json` | Processing pipeline output and derivative availability |
-| `digest_schema_phenotypic.json` | Demographic and phenotypic assessment data |
+| `imaging_digest_schema.json` | Processing pipeline output and derivative availability |
+| `phenotypic_digest_schema.json` | Demographic and phenotypic assessment data |
 
 ## How to read the schema
 ### Column categories

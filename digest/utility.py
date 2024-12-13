@@ -10,11 +10,11 @@ import pandas as pd
 SCHEMAS_PATH = Path(__file__).absolute().parents[1] / "schemas"
 BAGEL_CONFIG = {
     "imaging": {
-        "schema_file": "bagel_schema.json",
+        "schema_file": "imaging_digest_schema.json",
         "overview_col": "status",
     },
     "phenotypic": {
-        "schema_file": "bagel_schema_pheno.json",
+        "schema_file": "phenotypic_digest_schema.json",
         "overview_col": "assessment_score",
     },
 }

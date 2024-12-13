@@ -266,7 +266,7 @@ def status_legend_card():
                                     "These are the recommended status definitions for processing progress. For more details, see the ",
                                     html.A(
                                         "schema for an imaging digest file",
-                                        href="https://github.com/neurobagel/digest/blob/main/schemas/bagel_schema.json",
+                                        href="https://github.com/neurobagel/digest/blob/main/schemas/imaging_digest_schema.json",
                                         target="_blank",
                                     ),
                                 ],
