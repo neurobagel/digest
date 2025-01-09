@@ -36,7 +36,7 @@ For detailed instructions to get started using Nipoppy, see the [documentation](
 
 In brief, the (mostly automated!) Nipoppy steps to generate a processing status file can be as simple as:
 1. Initializing an empty, Nipoppy-compliant dataset directory tree for your dataset
-2. Updating your Nipoppy configuration with the pipeline versions you are using, and creating a manifest spreadsheet of all available participants and sessions
+2. Updating your Nipoppy configuration with the pipeline versions you are using, and creating a manifest file containing all available participants and sessions
 2. Populating the directory tree with any existing data and pipeline outputs _*_
 3. Running the tracker for the relevant pipeline(s) to generate a processing status file
 
