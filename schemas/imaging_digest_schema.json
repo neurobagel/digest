@@ -11,7 +11,7 @@
             "IsRequired": false
         },
         "session_id": {
-            "Description": "Participant session identifier.", 
+            "Description": "Session identifier.", 
             "dtype": "str",
             "IsRequired": true
         },
@@ -48,7 +48,7 @@
             "IsRequired": true
         },
         "status": {
-            "Description": "Completion status of the pipeline run or step for the subject-session pair. 'SUCCESS': All output files are present. 'FAIL': At least one output file is missing. 'INCOMPLETE': Parent pipeline has not been run for the subject session. 'UNAVAILABLE': Relevant MRI modality for pipeline not available for subject session.",
+            "Description": "Completion status of the pipeline run or step for the subject-session pair. 'SUCCESS': All output files are present. 'FAIL': At least one output file is missing. 'INCOMPLETE': Pipeline has not been run for the subject session. 'UNAVAILABLE': Relevant MRI modality for pipeline not available for subject session.",
             "dtype": "str",
             "IsRequired": true,
             "Range": ["SUCCESS", "FAIL", "INCOMPLETE", "UNAVAILABLE", ""]
