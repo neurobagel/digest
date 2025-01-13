@@ -15,11 +15,10 @@
             "dtype": "str",
             "IsRequired": true
         },
-        "has_mri_data": {
-            "Description": "Whether or not participant had MRI data acquired in a given session.",
-            "dtype": "bool",
-            "IsRequired": false,
-            "Range": [true, false]
+        "bids_session_id": {
+            "Description": "BIDS-compliant session identifier of the form ses-<label>.", 
+            "dtype": "str",
+            "IsRequired": false
         },
         "assessment_name": {
             "Description": "Name of an assessment or subscale completed by the participant.",
