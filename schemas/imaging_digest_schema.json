@@ -6,7 +6,7 @@
             "IsRequired": true
         },
         "bids_participant_id": {
-            "Description": "BIDS-compliant participant identifier.",
+            "Description": "BIDS-compliant participant identifier of the form sub-<label>.",
             "dtype": "str",
             "IsRequired": false
         },
@@ -16,7 +16,7 @@
             "IsRequired": true
         },
         "bids_session_id": {
-            "Description": "BIDS-compliant session identifier.", 
+            "Description": "BIDS-compliant session identifier of the form ses-<label>.", 
             "dtype": "str",
             "IsRequired": false
         },
@@ -26,7 +26,7 @@
             "IsRequired": true
         },     
         "pipeline_version": {
-            "description": "Version of the pipeline that was run. Must have a value if the value for 'pipeline_name' is not 'UNAVAILABLE'.",
+            "description": "Version of the pipeline that was run.",
             "dtype": "str",
             "IsRequired": true
         },

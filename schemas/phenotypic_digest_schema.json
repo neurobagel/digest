@@ -6,12 +6,12 @@
             "IsRequired": true
         },
         "bids_participant_id": {
-            "Description": "BIDS-compliant participant identifier.", 
+            "Description": "BIDS-compliant participant identifier of the form sub-<label>.", 
             "dtype": "str",
             "IsRequired": false
         },
         "session_id": {
-            "Description": "Participant session identifier.", 
+            "Description": "Session identifier.", 
             "dtype": "str",
             "IsRequired": true
         },
