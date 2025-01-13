@@ -268,7 +268,7 @@ def load_file_from_path(
     if not file_path.exists():
         return None, "File not found."
 
-    bagel = pd.read_tsv(file_path, sep="\t")
+    bagel = pd.read_csv(file_path, sep="\t")
     return bagel, None
 
 

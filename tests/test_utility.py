@@ -318,3 +318,13 @@ def test_generate_column_summary_str(column, nonmissing, missing, stats):
     assert [stat in column_summary for stat in stats]
     assert f"non-missing values: {nonmissing}" in column_summary
     assert f"missing values: {missing}" in column_summary
+
+
+def test_load_file_from_path(bagels_path):
+    """Test that load_file_from_path() correctly loads a tabular file from a given path."""
+    data, upload_error = util.load_file_from_path(
+        bagels_path / "example_imaging.tsv"
+    )
+
+    assert data is not None and isinstance(data, pd.DataFrame)
+    assert upload_error is None
