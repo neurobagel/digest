@@ -12,7 +12,7 @@ There are different schemas for digest files containing different modalities of 
 
 ## How to read the schema
 ### Column categories
-Within a schema, columns are grouped into two semantic categories. These categories are purely for organizational purposes and do not appear in an digest file.
+Within a schema, columns are grouped into two semantic categories. These categories are purely for organizational purposes and do not appear in a digest file.
 
 **Global columns:** Columns describing basic metadata that should have the same meaning regardless of the specific event described by a given record 
 (e.g., a certain processing pipeline or phenotypic assessment), and do not depend on event outputs.

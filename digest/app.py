@@ -189,7 +189,7 @@ def process_bagel(upload_contents, available_digest_nclicks, filenames):
         {"type": schema, "data": overview_df.to_dict("records")},
         pipelines_dict,
         None,
-        "csv",  # NOTE: "tsv" is not an option for export_format
+        "csv",  # NOTE: the dash_table.DataTable object does not support "tsv" as an option for export_format
     )
 
 
