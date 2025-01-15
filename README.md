@@ -49,14 +49,14 @@ _*Nipoppy also provides a protocol for running processing pipelines from raw ima
 docker pull neurobagel/digest:nightly
 ```
 
-2. Currently, `digest` also relies on a local copy of the [`nipoppy-qpn`](https://github.com/neurodatascience/nipoppy-qpn) repository, which contains ready-to-use `digest` files that are automatically generated for the Quebec Parkinson Network data.
+2. Currently, `digest` also relies on a local copy of the [`qpn_workflows`](https://github.com/neurodatascience/qpn_workflows) repository, which contains ready-to-use `digest` files that are automatically generated for the Quebec Parkinson Network data.
 ```
-git clone https://github.com/neurodatascience/nipoppy-qpn.git
+git clone https://github.com/neurodatascience/qpn_workflows.git
 ```
 
-3. Run `digest` and mount the `nipoppy-qpn` directory into the container:
+3. Run `digest` and mount the `qpn_workflows` directory into the container:
 ```bash
-docker run -d -p 8050:8050 -v ${PWD}/nipoppy-qpn:/app/nipoppy-qpn neurobagel/digest:nightly
+docker run -d -p 8050:8050 -v ${PWD}/qpn_workflows:/app/qpn_workflows neurobagel/digest:nightly
 ```
 
 Now, the dashboard can be accessed at http://127.0.0.1:8050 on your local machine.

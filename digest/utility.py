@@ -36,15 +36,13 @@ PUBLIC_DIGEST_FILE_PATHS = {
     "qpn": {
         "name": "Quebec Parkinson Network",
         "imaging": Path(__file__).absolute().parents[2]
-        / "nipoppy-qpn"
-        / "nipoppy"
+        / "qpn_workflows"
         / "digest"
-        / "qpn_imaging_availability_digest.tsv",
+        / "imaging_digest_filtered.tsv",
         "phenotypic": Path(__file__).absolute().parents[2]
-        / "nipoppy-qpn"
-        / "nipoppy"
+        / "qpn_workflows"
         / "digest"
-        / "qpn_tabular_availability_digest.tsv",
+        / "tabular_digest_filtered.tsv",
     }
 }
 
