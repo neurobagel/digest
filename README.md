@@ -29,7 +29,7 @@ You can find correctly formatted example input files [here](/example_bagels/) to
 At the moment, each digest file is expected to correspond to one dataset.
 
 ## Creating a dashboard-ready "digest" file
-While `digest` accepts any TSV compliant with one of the [digest schemas](/schemas/), the easiest way to obtain dashboard-ready files for pipeline derivative availability is to use the [Nipoppy](https://neurobagel.org/nipoppy/overview/) specification for organizing your neuroimaging dataset.
+While `digest` accepts any TSV compliant with one of the [digest schemas](/schemas/), the easiest way to obtain dashboard-ready files for pipeline derivative availability is to use the [Nipoppy](https://nipoppy.readthedocs.io/en/stable/) specification for organizing your neuroimaging dataset.
 Nipoppy provides dataset [trackers](https://nipoppy.readthedocs.io/en/stable/user_guide/tracking.html) that can automatically extract subjects' imaging data and pipeline output availability, producing `digest`-compatible processing status files.
 
 For detailed instructions to get started using Nipoppy, see the [documentation](https://nipoppy.readthedocs.io/en/stable/). 
