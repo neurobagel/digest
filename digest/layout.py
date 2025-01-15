@@ -477,7 +477,9 @@ def phenotypic_plotting_form():
                 html_for="phenotypic-column-plotting-dropdown",
                 className="mb-0",
             ),
-            dcc.Dropdown(
+            # dbc.Select is a better option here for accommodating potentially long column names,
+            # since dcc.Dropdown causes long option values to overlap with each other
+            dbc.Select(
                 id="phenotypic-column-plotting-dropdown",
                 options=[],
             ),
