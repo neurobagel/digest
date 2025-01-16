@@ -2,6 +2,7 @@ import os
 
 import pytest
 from dash.testing.application_runners import import_app
+from selenium.webdriver.support.ui import Select
 
 
 @pytest.fixture(scope="function")
@@ -18,13 +19,13 @@ def test_server(dash_duo):
     "valid_bagel,bagel_type,expected_elements,unexpected_elements",
     [
         (
-            "example_imaging_bagel.csv",
+            "example_imaging.tsv",
             "imaging",
             ["#fig-pipeline-status-all-ses"],
             ["#phenotypic-plotting-form"],
         ),
         (
-            "example_pheno_bagel.csv",
+            "example_phenotypic.tsv",
             "phenotypic",
             # TODO: Check specifically for a session filter form instead of #advanced-filter-form,
             # since latter is a larger container that also contains pipeline-specific dropdowns for imaging data
@@ -80,8 +81,8 @@ def test_002_upload_invalid_imaging_bagel(test_server, bagels_path):
     to reuse the same (function scoped) server instance.
     """
     invalid_input_output = {
-        "example_missing-col_bagel.csv": "missing the following required imaging metadata columns: {'pipeline_starttime'}",
-        "example_pheno_bagel.csv": "missing the following required imaging metadata columns",
+        "example_imaging_missing-col.tsv": "missing the following required imaging metadata columns: {'pipeline_step'}",
+        "example_phenotypic.tsv": "missing the following required imaging metadata columns",
     }
 
     upload = test_server.driver.find_element(
@@ -115,9 +116,7 @@ def test_003_upload_invalid_phenotypic_bagel(test_server, bagels_path):
     )
 
     upload.send_keys(
-        os.path.realpath(
-            os.path.join(bagels_path, "example_imaging_bagel.csv")
-        )
+        os.path.realpath(os.path.join(bagels_path, "example_imaging.tsv"))
     )
     test_server.wait_for_contains_text("#output-data-upload", err, timeout=4)
     assert err in test_server.find_element("#output-data-upload").text
@@ -139,7 +138,7 @@ def test_004_phenotypic_col_selection_generates_visualization(
         """//*[contains(@id,'"index":"phenotypic","type":"upload-data"')]/div/input""",
     )
     upload.send_keys(
-        os.path.realpath(os.path.join(bagels_path, "example_pheno_bagel.csv"))
+        os.path.realpath(os.path.join(bagels_path, "example_phenotypic.tsv"))
     )
 
     # Wait for dropdown container
@@ -150,10 +149,12 @@ def test_004_phenotypic_col_selection_generates_visualization(
     # Dismiss the dataset name modal first
     test_server.find_element("#submit-name").click()
 
-    # Select the dropdown option using a neat but somehow undocumented method - see https://github.com/plotly/dash/issues/858
-    test_server.select_dcc_dropdown(
-        "#phenotypic-column-plotting-dropdown", value="moca_total"
+    # Selenium provides a Select class specifically for interacting with HTML select elements
+    # (Adapted from https://stackoverflow.com/questions/7867537/how-to-select-a-drop-down-menu-value-with-selenium-using-python)
+    phenotypic_column_dropdown = Select(
+        test_server.find_element("#phenotypic-column-plotting-dropdown")
     )
+    phenotypic_column_dropdown.select_by_value("moca_total")
 
     test_server.wait_for_style_to_equal(
         "#fig-column-histogram", "display", "block", timeout=4
@@ -161,6 +162,10 @@ def test_004_phenotypic_col_selection_generates_visualization(
     test_server.wait_for_style_to_equal(
         "#column-summary-card", "display", "block", timeout=4
     )
+    test_server.wait_for_contains_text(
+        "#fig-column-histogram", "moca_total", timeout=4
+    )
+
     assert (
         "moca_total" in test_server.find_element("#fig-column-histogram").text
     )

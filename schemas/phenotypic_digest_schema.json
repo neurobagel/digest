@@ -1,0 +1,46 @@
+{
+    "GLOBAL_COLUMNS": {
+        "participant_id": {
+            "Description": "Participant identifier.", 
+            "dtype": "str",
+            "IsRequired": true
+        },
+        "bids_participant_id": {
+            "Description": "BIDS-compliant participant identifier of the form sub-<label>.", 
+            "dtype": "str",
+            "IsRequired": false
+        },
+        "session_id": {
+            "Description": "Session identifier.", 
+            "dtype": "str",
+            "IsRequired": true
+        },
+        "bids_session_id": {
+            "Description": "BIDS-compliant session identifier of the form ses-<label>.", 
+            "dtype": "str",
+            "IsRequired": false
+        },
+        "assessment_name": {
+            "Description": "Name of an assessment or subscale completed by the participant.",
+            "dtype": "str",
+            "IsRequired": true
+        },     
+        "assessment_version": {
+            "Description": "Version of assessment. Should be defined if more than one assessment of the same name is present.",
+            "dtype": "str",
+            "IsRequired": false
+        },
+        "assessment_datetime": {
+            "Description": "Date/time that assessment was completed. In format of 'YYYY-MM-DD HH:MM:SS'.",
+            "dtype": "str",
+            "IsRequired": false
+        }
+    },
+    "ASSESSMENT_SPECIFIC_COLUMNS": {
+        "assessment_score": {
+            "Description": "Score of a given participant corresponding to an assessment.",
+            "dtype": "str",
+            "IsRequired": true
+        }
+    }
+}
