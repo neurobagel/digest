@@ -2,6 +2,7 @@ import os
 
 import pytest
 from dash.testing.application_runners import import_app
+from selenium.webdriver.support.ui import Select
 
 
 @pytest.fixture(scope="function")
@@ -148,10 +149,12 @@ def test_004_phenotypic_col_selection_generates_visualization(
     # Dismiss the dataset name modal first
     test_server.find_element("#submit-name").click()
 
-    # Select the dropdown option using a neat but somehow undocumented method - see https://github.com/plotly/dash/issues/858
-    test_server.select_dcc_dropdown(
-        "#phenotypic-column-plotting-dropdown", value="moca_total"
+    # Selenium provides a Select class specifically for interacting with HTML select elements
+    # (Adapted from https://stackoverflow.com/questions/7867537/how-to-select-a-drop-down-menu-value-with-selenium-using-python)
+    phenotypic_column_dropdown = Select(
+        test_server.find_element("#phenotypic-column-plotting-dropdown")
     )
+    phenotypic_column_dropdown.select_by_value("moca_total")
 
     test_server.wait_for_style_to_equal(
         "#fig-column-histogram", "display", "block", timeout=4
@@ -159,6 +162,10 @@ def test_004_phenotypic_col_selection_generates_visualization(
     test_server.wait_for_style_to_equal(
         "#column-summary-card", "display", "block", timeout=4
     )
+    test_server.wait_for_contains_text(
+        "#fig-column-histogram", "moca_total", timeout=4
+    )
+
     assert (
         "moca_total" in test_server.find_element("#fig-column-histogram").text
     )
