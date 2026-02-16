@@ -22,7 +22,7 @@ It provides user-friendly options for querying data availability, along with int
 ## Quickstart
 Try out `digest` at https://digest.neurobagel.org/!
 
-You can find correctly formatted example input files [here](/example_bagels/) to test out dashboard functionality.
+You can find correctly formatted example input files [here](/example_inputs/) to test out dashboard functionality.
 
 ## Input schema
 `digest` supports long format TSVs that contain the columns specified in the [digest schemas](/schemas/) (see also the schema [README](https://github.com/neurobagel/digest/tree/main/schemas#readme)). 
@@ -30,7 +30,7 @@ At the moment, each digest file is expected to correspond to one dataset.
 
 ## Creating a dashboard-ready "digest" file
 While `digest` accepts any TSV compliant with one of the [digest schemas](/schemas/), the easiest way to obtain dashboard-ready files for pipeline derivative availability is to use the [Nipoppy](https://nipoppy.readthedocs.io/en/stable/) specification for organizing your neuroimaging dataset.
-Nipoppy provides dataset [trackers](https://nipoppy.readthedocs.io/en/stable/user_guide/tracking.html) that can automatically extract subjects' imaging data and pipeline output availability, producing `digest`-compatible processing status files.
+Nipoppy provides dataset [trackers](https://nipoppy.readthedocs.io/en/stable/how_to_guides/tracking/index.html) that can automatically extract subjects' imaging data and pipeline output availability, producing `digest`-compatible processing status files.
 
 For detailed instructions to get started using Nipoppy, see the [documentation](https://nipoppy.readthedocs.io/en/stable/). 
 
@@ -49,12 +49,7 @@ _*Nipoppy also provides a protocol for running processing pipelines from raw ima
 docker pull neurobagel/digest:nightly
 ```
 
-2. Currently, `digest` also relies on a local copy of the [`qpn_workflows`](https://github.com/neurodatascience/qpn_workflows) repository, which contains ready-to-use `digest` files that are automatically generated for the Quebec Parkinson Network data.
-```
-git clone https://github.com/neurodatascience/qpn_workflows.git
-```
-
-3. Run `digest` and mount the `qpn_workflows` directory into the container:
+2. Run `digest` and mount a directory containing ready-to-use digest files (e.g., `qpn_workflows`) into the container:
 ```bash
 docker run -d -p 8050:8050 -v ${PWD}/qpn_workflows:/app/qpn_workflows neurobagel/digest:nightly
 ```
