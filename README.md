@@ -49,7 +49,8 @@ _*Nipoppy also provides a protocol for running processing pipelines from raw ima
 docker pull neurobagel/digest:nightly
 ```
 
-2. Run `digest` and mount a directory containing ready-to-use digest files (e.g., [`qpn_workflows`](git clone https://github.com/neurodatascience/qpn_workflows.git), which contains digest files auto-generated for Quebec Parkinson Network data) into the container:
+2. Run `digest` and mount a directory containing ready-to-use digest files (e.g., [`qpn_workflows`](https://github.com/neurodatascience/qpn_workflows.git), 
+which contains digest files auto-generated for Quebec Parkinson Network data) into the container:
 ```bash
 docker run -d -p 8050:8050 -v ${PWD}/qpn_workflows:/app/qpn_workflows neurobagel/digest:nightly
 ```
